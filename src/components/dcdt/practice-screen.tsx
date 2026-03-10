@@ -126,7 +126,7 @@ export function PracticeScreen() {
       {/* Primary Action: I am familiar */}
       <div className="max-w-xl mx-auto w-full">
         <button
-          onClick={() => setCurrentScreen('preparation')}
+          onClick={() => setCurrentScreen('canvas')}
           className="w-full h-20 bg-primary text-primary-foreground text-xl md:text-2xl font-bold rounded-2xl shadow-lg hover:opacity-90 transition-opacity active:scale-[0.98]"
         >
           {t('iAmFamiliar')}

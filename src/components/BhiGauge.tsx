@@ -5,7 +5,7 @@ const data = [{ name: 'Score', value: 72 }, { name: 'Remaining', value: 28 }];
 
 const COLORS = ['#00C000', '#FFCC00', '#FF0000']; // Green, Yellow, Red
 
-const getColor = (score) => {
+const getColor = (score: number) => {
     if (score >= 80) return COLORS[0];
     if (score >= 50) return COLORS[1];
     return COLORS[2];

@@ -163,16 +163,16 @@ function VelocityChart({ width = 280, height = 100 }: { width?: number; height?:
 }
 
 export function ReportScreen() {
-  const { t, setCurrentScreen, restartCount, getTCT, resetRestartCount } = useApp()
+  const { t, setCurrentScreen, restartCount, resetRestartCount } = useApp()
   
-  const totalTime = getTCT() || 45 // Default to 45s for demo
+  const totalTime = 45 // Default to 45s for demo
   const thinkTimePercent = 65
   const aiConfidence = 85 // Simulated AI confidence score
   const isElevatedRisk = aiConfidence >= 70
   
   const handleReturnHome = () => {
     resetRestartCount()
-    setCurrentScreen('practice')
+    setCurrentScreen('tutorial')
   }
   
   // Simulated checklist results

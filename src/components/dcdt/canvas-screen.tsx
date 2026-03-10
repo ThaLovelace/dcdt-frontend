@@ -10,7 +10,7 @@ interface Point {
 }
 
 export function CanvasScreen() {
-  const { t, setCurrentScreen, incrementRestartCount } = useApp()
+  const { t, setCurrentScreen, incrementRestart } = useApp()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [stylusOnly, setStylusOnly] = useState(true)
@@ -95,7 +95,7 @@ export function CanvasScreen() {
   }
   
   const handleRestartConfirm = () => {
-    incrementRestartCount()
+    incrementRestart()
     clearCanvas()
     setShowRestartModal(false)
   }
