@@ -127,6 +127,24 @@ const translations = {
     confirm: "ยืนยัน",
     back: "กลับ",
     next: "ถัดไป",
+    // ──────────────────────────────────────────────────────────
+    // เพิ่มใหม่สำหรับ Modal เก็บข้อมูลและสอบถามการฝึกซ้อม
+    // ──────────────────────────────────────────────────────────
+    askPracticeTitle: "คุณต้องการฝึกซ้อมก่อนหรือไม่?",
+    askPracticeDesc: "เราแนะนำให้ผู้ที่ไม่คุ้นเคยกับการใช้หน้าจอสัมผัส ลองฝึกวาดบนกระดานซ้อมก่อนเริ่มทำแบบทดสอบจริง",
+    goPracticeBtn: "ลองฝึกซ้อมก่อน",
+    skipPracticeBtn: "ข้ามไปทำแบบทดสอบ",
+    preTestModalTitle: "ข้อมูลพื้นฐาน",
+    preTestModalDesc: "เพื่อความแม่นยำในการประมวลผล กรุณาระบุข้อมูลของผู้ทำแบบทดสอบ",
+    ageLabel: "อายุ (ปี)",
+    agePlaceholder: "ระบุอายุ",
+    eduLabel: "ระดับการศึกษา",
+    eduLessThan8: "น้อยกว่า 8 ปี (ประถมศึกษาลงมา)",
+    eduMoreThan8: "8 ปีขึ้นไป (มัธยมศึกษาขึ้นไป)",
+    startRealTestBtn: "เริ่มทำแบบทดสอบจริง",
+    warningRealTestTitle: "เตรียมพร้อมทำแบบทดสอบจริง",
+    warningRealTestDesc: "หลังจากนี้ระบบจะเริ่มจับเวลาและบันทึกผลการวาดของคุณ กรุณาตั้งใจวาดให้ดีที่สุด",
+    backToPracticeBtn: "กลับไปฝึกซ้อม",
   },
   en: {
     appTitle: "Digital Clock Drawing Test",
@@ -242,6 +260,24 @@ const translations = {
     confirm: "Confirm",
     back: "Back",
     next: "Next",
+    // ──────────────────────────────────────────────────────────
+    // เพิ่มใหม่สำหรับ Modal เก็บข้อมูลและสอบถามการฝึกซ้อม
+    // ──────────────────────────────────────────────────────────
+    askPracticeTitle: "Would you like to practice first?",
+    askPracticeDesc: "We recommend practicing on the canvas if you are unfamiliar with touch screens.",
+    goPracticeBtn: "Practice Now",
+    skipPracticeBtn: "Skip to Test",
+    preTestModalTitle: "Basic Information",
+    preTestModalDesc: "To ensure accurate processing, please provide the patient's information.",
+    ageLabel: "Age (Years)",
+    agePlaceholder: "Enter age",
+    eduLabel: "Education Level",
+    eduLessThan8: "Less than 8 years (Primary or below)",
+    eduMoreThan8: "8 years or more (Secondary or above)",
+    startRealTestBtn: "Start Real Test",
+    warningRealTestTitle: "Ready for the Real Test",
+    warningRealTestDesc: "The system will now start the timer and record your drawing. Please do your best.",
+    backToPracticeBtn: "Back to Practice",
   },
 } as const;
 
@@ -260,6 +296,11 @@ interface AppContextValue {
   resetRestartCount: () => void;
   startTCT: () => void;
   getTCT: () => number;
+  // ─── Add New State ───
+  age: string;
+  setAge: (age: string) => void;
+  education: "<8" | ">=8" | null;
+  setEducation: (edu: "<8" | ">=8" | null) => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -281,6 +322,10 @@ export function AppProvider({ children, defaultLanguage = "th" }: AppProviderPro
   const [currentScreen, setCurrentScreen] = useState<Screen>("tutorial");
   const [restartCount, setRestartCount] = useState(0);
   const tctStartRef = useRef<number | null>(null);
+
+  // ─── เพิ่ม State สำหรับอายุและการศึกษา ───
+  const [age, setAge] = useState<string>("");
+  const [education, setEducation] = useState<"<8" | ">=8" | null>(null);
 
   const setLanguage = useCallback((lang: Language) => {
     setIsChangingLanguage(true);
@@ -316,6 +361,9 @@ export function AppProvider({ children, defaultLanguage = "th" }: AppProviderPro
       currentScreen, setCurrentScreen,
       restartCount, incrementRestartCount, resetRestartCount,
       startTCT, getTCT,
+      // ─── ส่ง State ใหม่เข้าไป ───
+      age, setAge,
+      education, setEducation,
     }}>
       {children}
     </AppContext.Provider>

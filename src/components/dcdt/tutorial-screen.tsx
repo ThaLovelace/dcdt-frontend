@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useApp } from '@/lib/app-context'
 import { Card, CardContent } from '@/components/ui/card'
-import { X } from 'lucide-react'
+import { X, Edit3, User, GraduationCap } from 'lucide-react'
 
 // ─── Step icons (visual only — no text) ──────────────────────────────────────
 
@@ -26,8 +26,9 @@ const STEP_ICONS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function TutorialScreen() {
-  const { setCurrentScreen, t } = useApp()
+  const { setCurrentScreen, t, age, setAge, education, setEducation } = useApp()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalStep, setModalStep] = useState<'ask-practice' | 'collect-data'>('ask-practice')
 
   const steps = [
     { titleKey: 'tutorialStep1Title' as const, bodyKey: 'tutorialStep1Body' as const },
@@ -35,6 +36,18 @@ export function TutorialScreen() {
     { titleKey: 'tutorialStep3Title' as const, bodyKey: 'tutorialStep3Body' as const },
     { titleKey: 'tutorialStep4Title' as const, bodyKey: 'tutorialStep4Body' as const },
   ]
+
+  const handleStartClick = () => {
+    setModalStep('ask-practice')
+    setIsModalOpen(true)
+  }
+
+  const handleStartRealTest = () => {
+    if (age && education) {
+      setIsModalOpen(false)
+      setCurrentScreen('canvas')
+    }
+  }
 
   return (
     <div className="flex flex-col w-full h-full max-w-5xl mx-auto p-4 md:p-6 overflow-hidden">
@@ -84,7 +97,7 @@ export function TutorialScreen() {
       {/* ── Footer CTA ── */}
       <div className="flex-none shrink-0 w-full mt-4 flex justify-center">
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleStartClick}
           className="w-full max-w-md h-12 text-lg rounded-2xl text-white font-bold shadow-lg hover:opacity-90 transition-opacity active:scale-[0.98]"
           style={{ backgroundColor: 'var(--trust-blue)' }}
         >
@@ -94,46 +107,104 @@ export function TutorialScreen() {
 
       {/* ── Confirmation Modal ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-md p-6 md:p-8 shadow-2xl relative">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-6 h-6 text-gray-400" />
+            </button>
 
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                aria-label={t('close')}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
+            {/* Step 1: ถามเรื่องซ้อม */}
+            {modalStep === 'ask-practice' && (
+              <div className="flex flex-col text-center mt-4">
+                <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Edit3 className="w-10 h-10" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('askPracticeTitle')}</h2>
+                <p className="text-gray-500 mb-8 px-2">{t('askPracticeDesc')}</p>
+                
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(false)
+                      setCurrentScreen('practice')
+                    }}
+                    className="w-full h-14 rounded-xl font-bold text-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-md"
+                  >
+                    {t('goPracticeBtn')}
+                  </button>
+                  <button
+                    onClick={() => setModalStep('collect-data')}
+                    className="w-full h-14 rounded-xl font-semibold text-lg border-2 border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    {t('skipPracticeBtn')}
+                  </button>
+                </div>
+              </div>
+            )}
 
-            <h2 className="text-3xl font-bold text-primary mb-4">
-              {t('tutorialModalTitle')}
-            </h2>
+            {/* Step 2: กรอกข้อมูล */}
+            {modalStep === 'collect-data' && (
+              <div className="flex flex-col mt-2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('preTestModalTitle')}</h2>
+                <p className="text-gray-500 mb-6 text-sm">{t('preTestModalDesc')}</p>
 
-            <p className="text-xl text-gray-700 mb-8">
-              {t('tutorialModalBody')}
-              <br /><br />
-              <span className="text-red-500 font-semibold">
-                {t('tutorialModalWarning')}
-              </span>
-            </p>
+                <div className="space-y-5">
+                  {/* ฟอร์มรับอายุ */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <User className="w-4 h-4 text-blue-500" /> {t('ageLabel')}
+                    </label>
+                    <input
+                      type="number"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      placeholder={t('agePlaceholder')}
+                      className="w-full h-14 px-4 rounded-xl border-2 border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-lg font-medium outline-none"
+                    />
+                  </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setCurrentScreen('practice')}
-                className="flex-1 h-16 text-xl font-semibold rounded-2xl border-2 border-foreground bg-white text-foreground hover:bg-gray-50 transition-colors active:scale-[0.98]"
-              >
-                {t('tutorialModalPracticeBtn')}
-              </button>
-              <button
-                onClick={() => setCurrentScreen('canvas')}
-                className="flex-1 h-16 text-xl font-bold rounded-2xl bg-red-500 text-white shadow-lg hover:bg-red-600 transition-colors active:scale-[0.98]"
-              >
-                {t('tutorialModalStartBtn')}
-              </button>
-            </div>
+                  {/* ฟอร์มรับการศึกษา */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <GraduationCap className="w-4 h-4 text-blue-500" /> {t('eduLabel')}
+                    </label>
+                    <div className="grid grid-cols-1 gap-3">
+                      <button
+                        onClick={() => setEducation('<8')}
+                        className={`h-14 px-4 rounded-xl border-2 text-left transition-all font-medium ${
+                          education === '<8' 
+                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {t('eduLessThan8')}
+                      </button>
+                      <button
+                        onClick={() => setEducation('>=8')}
+                        className={`h-14 px-4 rounded-xl border-2 text-left transition-all font-medium ${
+                          education === '>=8' 
+                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {t('eduMoreThan8')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
+                <button
+                  onClick={handleStartRealTest}
+                  disabled={!age || !education}
+                  className="mt-8 w-full h-14 rounded-xl font-bold text-lg bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-md"
+                >
+                  {t('startRealTestBtn')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
