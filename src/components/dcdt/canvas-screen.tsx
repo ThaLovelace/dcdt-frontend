@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/app-context'
-import { RotateCcw, Send, X, Pen, Clock } from 'lucide-react'
+import { RotateCcw, Send, Pen, Clock } from 'lucide-react'
 
 interface Point {
   x: number
@@ -18,10 +18,10 @@ export function CanvasScreen() {
   const [hasDrawn, setHasDrawn] = useState(false)
   const lastPointRef = useRef<Point | null>(null)
 
-  // Silent TCT timer — records when the test screen mounted
+  // Silent TCT timer
   const startTimeRef = useRef(Date.now())
 
-  // ── Canvas init (devicePixelRatio-aware, no hardcoded size) ──────────────────
+  // ── Canvas init ──────────────────
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -42,9 +42,8 @@ export function CanvasScreen() {
 
   useEffect(() => {
     initCanvas()
-    // Re-init on resize so canvas resolution stays sharp
     const observer = new ResizeObserver(() => {
-      if (hasDrawn) return // Don't wipe an in-progress drawing
+      if (hasDrawn) return 
       initCanvas()
     })
     if (canvasRef.current?.parentElement) {
@@ -91,8 +90,6 @@ export function CanvasScreen() {
     if (stylusOnly && e.pointerType === 'touch') return null
 
     const rect = canvas.getBoundingClientRect()
-
-    // Return raw offset coordinates because ctx.scale() already handles the devicePixelRatio
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -131,53 +128,49 @@ export function CanvasScreen() {
     setShowRestartModal(false)
   }
 
-  // Disabled if nothing drawn yet
   const handleSubmit = () => {
     if (!hasDrawn) return
     setCurrentScreen('loading')
   }
-  // ── End drawing logic ─────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full max-w-7xl mx-auto p-2 gap-2 overflow-hidden bg-background">
+    // Mobile scroll logic, min-height to guarantee canvas space
+    <div className="flex flex-col lg:flex-row w-full h-full max-w-7xl mx-auto p-4 md:p-6 gap-4 overflow-y-auto lg:overflow-hidden bg-slate-50">
 
       {/* ── Control Panel (Left / Top) ── */}
-      <div className="flex flex-col shrink-0 lg:w-72 bg-card rounded-2xl p-4 shadow-sm border border-border gap-4">
+      <div className="flex flex-col shrink-0 lg:w-80 bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 gap-4">
 
         {/* Icon + instruction */}
         <div>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-            style={{ backgroundColor: 'oklch(0.95 0.03 250)', color: 'var(--trust-blue)' }}
-          >
-            <Clock className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-blue-50 text-blue-500">
+            <Clock className="w-6 h-6" />
           </div>
-          <h1 className="text-xl font-bold text-foreground leading-snug mb-1">
+          <h1 className="text-xl font-bold text-gray-900 leading-snug mb-1">
             {t('canvasInstruction')}
           </h1>
         </div>
 
         {/* Stylus toggle */}
-        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/60 border border-border">
-          <div className="flex items-center gap-2">
-            <Pen className="w-4 h-4 text-primary" strokeWidth={2} />
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
+          <div className="flex items-center gap-3">
+            <Pen className="w-5 h-5 text-blue-500" strokeWidth={2.5} />
             <div>
-              <p className="text-sm font-medium text-foreground leading-none">{t('stylusMode')}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('palmRejection')}</p>
+              <p className="text-sm font-bold text-gray-900 leading-none mb-1">{t('stylusMode')}</p>
+              <p className="text-xs text-gray-500">{t('palmRejection')}</p>
             </div>
           </div>
           <button
             onClick={() => setStylusOnly(!stylusOnly)}
-            className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ${
-              stylusOnly ? 'bg-primary' : 'bg-border'
+            className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
+              stylusOnly ? 'bg-blue-500' : 'bg-gray-200'
             }`}
             role="switch"
             aria-checked={stylusOnly}
             aria-label={t('palmRejection')}
           >
             <span
-              className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                stylusOnly ? 'translate-x-6' : 'translate-x-0'
+              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                stylusOnly ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
@@ -187,10 +180,10 @@ export function CanvasScreen() {
         <div className="flex-1" />
 
         {/* Action buttons */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3 mt-4">
           <button
             onClick={() => setShowRestartModal(true)}
-            className="flex items-center justify-center gap-2 h-10 w-full rounded-xl border-2 border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors active:scale-[0.98]"
+            className="flex items-center justify-center gap-2 h-12 w-full rounded-2xl border-2 border-gray-100 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors active:scale-[0.98]"
           >
             <RotateCcw className="w-4 h-4" strokeWidth={2} />
             {t('restartTest')}
@@ -199,12 +192,11 @@ export function CanvasScreen() {
           <button
             onClick={handleSubmit}
             disabled={!hasDrawn}
-            className={`flex items-center justify-center gap-2 h-10 w-full rounded-xl text-white text-sm font-bold shadow-md transition-all active:scale-[0.98] ${
+            className={`flex items-center justify-center gap-2 h-12 w-full rounded-2xl text-white text-sm font-bold shadow-md transition-all active:scale-[0.98] ${
               hasDrawn
-                ? 'hover:opacity-90'
-                : 'opacity-40 cursor-not-allowed'
+                ? 'bg-blue-500 hover:bg-blue-600'
+                : 'bg-gray-300 shadow-none text-gray-500 cursor-not-allowed'
             }`}
-            style={{ backgroundColor: 'var(--trust-blue)' }}
           >
             <Send className="w-4 h-4" strokeWidth={2} />
             {t('finishSubmit')}
@@ -214,7 +206,8 @@ export function CanvasScreen() {
       </div>
 
       {/* ── Canvas Panel (Right / Bottom) ── */}
-      <div className="flex-1 min-h-0 relative bg-white rounded-2xl border-2 border-border shadow-sm overflow-hidden">
+      {/* Forced min-h-[400px] on mobile */}
+      <div className="flex-1 min-h-[400px] lg:min-h-0 relative bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden mb-4 lg:mb-0">
         <canvas
           ref={canvasRef}
           className="w-full h-full cursor-crosshair touch-none"
@@ -225,46 +218,35 @@ export function CanvasScreen() {
         />
         {!hasDrawn && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-2xl text-muted-foreground/40 font-medium select-none">
+            <p className="text-2xl text-gray-300 font-bold select-none text-center px-4">
               {t('drawHere')}
             </p>
           </div>
         )}
       </div>
 
-      {/* ── Restart Confirmation Modal (UNCHANGED) ── */}
+      {/* ── Restart Confirmation Modal ── */}
       {showRestartModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-          <div className="bg-card rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-foreground">
-                {t('restartConfirmTitle')}
-              </h2>
-              <button
-                onClick={() => setShowRestartModal(false)}
-                aria-label={t('cancel')}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              >
-                <X className="w-6 h-6 text-muted-foreground" />
-              </button>
-            </div>
-
-            <p className="text-lg text-muted-foreground mb-8">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">
+              {t('restartConfirmTitle')}
+            </h2>
+            <p className="text-sm text-gray-500 mb-8 text-center px-2">
               {t('restartConfirmMessage')}
             </p>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowRestartModal(false)}
-                className="flex-1 h-14 bg-secondary text-secondary-foreground text-lg font-medium rounded-xl border-2 border-border hover:bg-muted transition-colors"
-              >
-                {t('cancel')}
-              </button>
+            <div className="flex flex-col gap-3">
               <button
                 onClick={handleRestartConfirm}
-                className="flex-1 h-14 bg-destructive text-destructive-foreground text-lg font-bold rounded-xl hover:opacity-90 transition-opacity"
+                className="w-full h-12 bg-red-500 text-white text-base font-bold rounded-xl shadow-md hover:bg-red-600 transition-colors"
               >
                 {t('confirmRestart')}
+              </button>
+              <button
+                onClick={() => setShowRestartModal(false)}
+                className="w-full h-12 bg-white text-gray-600 text-base font-semibold rounded-xl border-2 border-gray-100 hover:bg-gray-50 transition-colors"
+              >
+                {t('cancel')}
               </button>
             </div>
           </div>

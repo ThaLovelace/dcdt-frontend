@@ -43,28 +43,29 @@ export function LoadingScreen() {
   }, [setCurrentScreen, steps.length])
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-background">
-      <div className="text-center px-6 max-w-md">
+    <div className="flex-1 flex items-center justify-center bg-slate-50 p-4 md:p-8">
+      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 md:p-12 w-full max-w-md flex flex-col items-center text-center">
+        
         {/* Brain Icon */}
         <div className="mb-8 inline-flex">
-          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-            <Brain className="w-12 h-12 text-primary" strokeWidth={1.5} />
+          <div className="w-28 h-28 rounded-[2rem] bg-blue-50 flex items-center justify-center shadow-sm animate-pulse">
+            <Brain className="w-14 h-14 text-blue-500" strokeWidth={1.5} />
           </div>
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-foreground mb-6">{t('analyzing')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">{t('analyzing')}</h2>
 
         {/* Progress Bar */}
-        <div className="w-full h-3 bg-border rounded-full overflow-hidden mb-6">
+        <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden mb-6 shadow-inner">
           <div
-            className="h-full bg-primary rounded-full transition-all duration-100 ease-out"
+            className="h-full bg-blue-500 rounded-full transition-all duration-100 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
 
         {/* Dynamic Step Text */}
-        <p className="text-lg text-muted-foreground h-7 transition-opacity duration-300">
+        <p className="text-base md:text-lg text-gray-500 h-7 transition-opacity duration-300 font-medium">
           {steps[step]}
         </p>
       </div>

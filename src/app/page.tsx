@@ -7,6 +7,7 @@ import { PracticeScreen } from "@/components/dcdt/practice-screen"
 import { CanvasScreen } from "@/components/dcdt/canvas-screen"
 import { LoadingScreen } from "@/components/dcdt/loading-screen"
 import { ReportScreen } from "@/components/dcdt/report-screen"
+import { PreparationScreen } from "@/components/dcdt/preparation-screen"
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
 
@@ -24,14 +25,14 @@ function StepIndicator() {
 
   return (
     <div
-      className="w-full bg-card border-b-2 border-border px-4 py-4"
+      className="w-full bg-white border-b border-gray-100 px-4 py-5 shadow-sm z-0 relative"
       role="progressbar"
       aria-label={t('stepProgressLabel')}
       aria-valuenow={activeIndex + 1}
       aria-valuemin={1}
       aria-valuemax={STEPS.length}
     >
-      <ol className="flex items-center gap-0 w-full max-w-4xl mx-auto px-4">
+      <ol className="flex items-center gap-0 w-full max-w-5xl mx-auto px-4">
         {STEPS.map((step, index) => {
           const isCompleted = index < activeIndex
           const isActive    = index === activeIndex
@@ -40,20 +41,20 @@ function StepIndicator() {
 
           return (
             <li key={step.labelKey} className="flex items-center flex-1 min-w-0">
-              <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <div className="flex flex-col items-center gap-2.5 flex-shrink-0">
                 <div
                   className={[
-                    'w-10 h-10 rounded-full flex items-center justify-center text-base font-bold border-2 transition-colors',
+                    'w-12 h-12 rounded-[1rem] flex items-center justify-center text-lg font-black border-2 transition-colors shadow-sm',
                     isCompleted
-                      ? 'border-[var(--trust-blue)] bg-[var(--trust-blue)] text-white'
+                      ? 'border-blue-500 bg-blue-500 text-white'
                       : isActive
-                        ? 'border-[var(--trust-blue)] bg-white text-[var(--trust-blue)]'
-                        : 'border-border bg-background text-muted-foreground',
+                        ? 'border-blue-500 bg-blue-50 text-blue-600'
+                        : 'border-gray-200 bg-gray-50 text-gray-400',
                   ].join(' ')}
                   aria-hidden="true"
                 >
                   {isCompleted ? (
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
                       <polyline points="3 8 6.5 12 13 4" />
                     </svg>
                   ) : (
@@ -62,10 +63,10 @@ function StepIndicator() {
                 </div>
                 <span
                   className={[
-                    'text-base font-medium text-center leading-tight whitespace-nowrap',
-                    isCompleted ? 'text-[var(--trust-blue)]' : '',
-                    isActive    ? 'text-[var(--trust-blue)] font-bold' : '',
-                    isFuture    ? 'text-muted-foreground' : '',
+                    'text-sm md:text-base text-center leading-tight whitespace-nowrap',
+                    isCompleted ? 'text-blue-500 font-bold' : '',
+                    isActive    ? 'text-blue-600 font-black' : '',
+                    isFuture    ? 'text-gray-400 font-semibold' : '',
                   ].join(' ')}
                 >
                   {t(step.labelKey)}
@@ -74,8 +75,8 @@ function StepIndicator() {
               {!isLast && (
                 <div
                   className={[
-                    'flex-1 h-0.5 mx-2 mb-6 rounded-full transition-colors',
-                    isCompleted ? 'bg-[var(--trust-blue)]' : 'bg-border',
+                    'flex-1 h-1 mx-3 mb-8 rounded-full transition-colors',
+                    isCompleted ? 'bg-blue-500' : 'bg-gray-100',
                   ].join(' ')}
                   aria-hidden="true"
                 />
@@ -92,11 +93,11 @@ function StepIndicator() {
 
 function ScreenRouter() {
   const { currentScreen } = useApp()
-  if (currentScreen === 'tutorial')  return <TutorialScreen />
-  if (currentScreen === 'practice')  return <PracticeScreen />
-  if (currentScreen === 'canvas')    return <CanvasScreen />
-  if (currentScreen === 'loading')   return <LoadingScreen />
-  if (currentScreen === 'report')    return <ReportScreen />
+  if (currentScreen === 'tutorial')    return <TutorialScreen />
+  if (currentScreen === 'practice')    return <PracticeScreen />
+  if (currentScreen === 'canvas')      return <CanvasScreen />
+  if (currentScreen === 'loading')     return <LoadingScreen />
+  if (currentScreen === 'report')      return <ReportScreen />
   return <TutorialScreen />
 }
 
@@ -107,7 +108,7 @@ function DCDTApp() {
   const isReport = currentScreen === 'report'
 
   return (
-    <div className={isReport ? 'min-h-full bg-background flex flex-col' : 'h-full bg-background flex flex-col'}>
+    <div className={isReport ? 'min-h-full bg-slate-50 flex flex-col' : 'h-full bg-slate-50 flex flex-col'}>
       <AppHeader />
       <StepIndicator />
       <main className={isReport ? 'flex flex-col' : 'flex-1 min-h-0 flex flex-col'}>
