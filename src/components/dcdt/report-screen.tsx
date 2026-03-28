@@ -29,8 +29,7 @@ const K_RULES = [
   { id: 'K5', domain: 'cognitive' as const, nameTH: 'ความหน่วงก่อนวาดเข็ม (Pre-First Hand Latency)', nameEN: 'Pre-First Hand Latency', descTH: 'ความล่าช้าในการวางแผนก่อนวาดเข็มนาฬิกาเส้นแรก (Executive Dysfunction)', descEN: 'Planning delay before drawing the first clock hand (Executive Dysfunction)', detected: false },
 ]
 
-const RESULT_INDEX = 1
-const RESULT = C_LEVELS[RESULT_INDEX]
+
 
 // จำลองข้อมูลความเร็วแบบสมจริง (Real-world scale data, ไม่ใช่ 0-1)
 const TIMELINE = [15, 45, 60, 80, 55, 90, 70, 85, 60, 40, 75, 50, 30, 20]
@@ -42,8 +41,8 @@ const cognitiveAbnormal = K_RULES.filter(k => k.domain === 'cognitive').some(k =
 
 function SectionHeader({ label, sub }: { label: string; sub?: string }) {
   return (
-    <div className="flex items-baseline gap-2 mb-5">
-      <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">{label}</h2>
+    <div className="dcdt-section-header">
+      <h2 className="dcdt-section-header-label">{label}</h2>
       {sub && <span className="text-[11px] font-semibold text-gray-400/70">{sub}</span>}
     </div>
   )
@@ -51,11 +50,11 @@ function SectionHeader({ label, sub }: { label: string; sub?: string }) {
 
 function StatusPill({ pass, passLabel, failLabel }: { pass: boolean; passLabel: string; failLabel: string }) {
   return pass ? (
-    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm">
+    <span className="dcdt-status-pill dcdt-status-pill-pass">
       <CheckCircle2 className="w-3.5 h-3.5" /> {passLabel}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 shadow-sm">
+    <span className="dcdt-status-pill dcdt-status-pill-fail">
       <AlertTriangle className="w-3.5 h-3.5" /> {failLabel}
     </span>
   )
@@ -174,10 +173,10 @@ function KRuleRow({ rule, lang }: { rule: typeof K_RULES[0]; lang: string }) {
   return (
     <div className={`rounded-2xl border-2 transition-all duration-200 ${rule.detected ? 'border-amber-200 bg-amber-50/50 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200 shadow-sm'}`}>
       <button
-        className="w-full flex items-center gap-4 px-4 py-3.5 text-left outline-none"
+        className="dcdt-krule-row-button"
         onClick={() => setOpen(v => !v)}
       >
-        <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shadow-sm transition-colors ${
+        <span className={`dcdt-krule-id-box ${
           rule.detected ? 'bg-white text-amber-600 border border-amber-100' : 'bg-gray-50 text-gray-500 border border-gray-200'
         }`}>
           {rule.id}
@@ -205,8 +204,20 @@ function KRuleRow({ rule, lang }: { rule: typeof K_RULES[0]; lang: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ReportScreen() {
-  const { t, language, setCurrentScreen, restartCount, getTCT, resetRestartCount } = useApp()
+  const { t, language, setCurrentScreen, restartCount, getTCT, resetRestartCount, resultIndex } = useApp()
   const [showAIOverlay, setShowAIOverlay] = useState(false)
+
+  // Fallback to the original hardcoded index if not provided
+  const finalResultIndex = resultIndex ?? 1 
+  const RESULT = C_LEVELS[finalResultIndex]
+
+  if (!RESULT) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        Result not found for index: {finalResultIndex}
+      </div>
+    )
+  }
 
   const totalTime = getTCT() || 45
   const thinkSec = Math.round(totalTime * 0.65)
@@ -236,7 +247,7 @@ export function ReportScreen() {
         <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+              <span className="dcdt-page-header-sub">
                 {lang === 'th' ? 'รายงานผลการประเมิน' : 'Assessment Report'}
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
@@ -250,7 +261,7 @@ export function ReportScreen() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 h-12 px-6 rounded-2xl border-2 border-gray-200 bg-white text-gray-700 text-sm font-bold shadow-sm hover:bg-gray-50 transition-all active:scale-[0.98]"
+              className="dcdt-btn-outline"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">{t('downloadPdfReport')}</span>
@@ -258,7 +269,7 @@ export function ReportScreen() {
             </button>
             <button
               onClick={handleReturnHome}
-              className="flex items-center gap-2 h-12 px-6 rounded-2xl text-white text-sm font-bold shadow-md bg-blue-500 hover:bg-blue-600 transition-all active:scale-[0.98]"
+              className="dcdt-btn-primary"
             >
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">{t('returnHome')}</span>
@@ -274,7 +285,7 @@ export function ReportScreen() {
           <div className="lg:col-span-4 flex flex-col gap-6 md:gap-8">
 
             {/* BHI Card */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8">
+            <div className="dcdt-card p-6 md:p-8">
               <SectionHeader label="Brain Health Index" sub="BHI" />
               <BHIArc value={RESULT.bhi} color={riskColor} />
               
@@ -296,7 +307,7 @@ export function ReportScreen() {
                   { label: lang === 'th' ? 'กายภาพ' : 'Motor', pct: '20%', note: 'K1–K3' },
                   { label: lang === 'th' ? 'ความคิด' : 'Cognitive', pct: '20%', note: 'K4–K5' },
                 ].map(s => (
-                  <div key={s.label} className="bg-gray-50 rounded-2xl p-3 border border-gray-100 shadow-sm">
+                  <div key={s.label} className="dcdt-card-nested bg-gray-50 p-3">
                     <p className="text-xs font-semibold text-gray-500 mb-1">{s.label}</p>
                     <p className="text-lg font-black text-gray-900">{s.pct}</p>
                     <p className="text-[10px] text-gray-400 font-medium mt-0.5">{s.note}</p>
@@ -307,7 +318,7 @@ export function ReportScreen() {
               <div className="my-8 border-t-2 border-gray-100" />
 
               {/* Clinical Classification */}
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+              <p className="dcdt-page-header-sub mb-4">
                 {lang === 'th' ? 'ผลการจำแนกทางคลินิก' : 'Clinical Classification'}
               </p>
 
@@ -324,7 +335,7 @@ export function ReportScreen() {
                 </p>
               </div>
 
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm">
+              <div className="dcdt-info-box">
                 <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <p className="text-sm text-gray-600 leading-relaxed">
                   <span className="font-bold text-gray-900">{lang === 'th' ? 'ข้อแนะนำ: ' : 'Action: '}</span>
@@ -350,7 +361,7 @@ export function ReportScreen() {
             </div>
 
             {/* Time Stats Card */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8">
+            <div className="dcdt-card p-6 md:p-8">
               <SectionHeader label={lang === 'th' ? 'เวลาที่ใช้ทั้งหมด' : 'Total Completion Time'} />
 
               <div className="flex items-end gap-2 mb-2">
@@ -408,10 +419,10 @@ export function ReportScreen() {
           <div className="lg:col-span-8 flex flex-col gap-6 md:gap-8">
 
             {/* AI Vision Card */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+            <div className="dcdt-card overflow-hidden flex flex-col">
               <div className="flex items-center justify-between px-6 py-5 border-b-2 border-gray-50 bg-white">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shadow-sm">
+                  <div className="dcdt-icon-box">
                     <Brain className="w-7 h-7 text-blue-500" />
                   </div>
                   <div>
@@ -429,11 +440,11 @@ export function ReportScreen() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 px-6 pt-6 bg-gray-50/30">
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="dcdt-card-nested p-4">
                   <p className="text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{lang === 'th' ? 'ผลการทำนาย' : 'Prediction'}</p>
                   <p className="text-xl font-black text-gray-900">{RESULT.ai}</p>
                 </div>
-                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="dcdt-card-nested p-4">
                   <p className="text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{lang === 'th' ? 'ความมั่นใจ' : 'Model Confidence'}</p>
                   <p className="text-xl font-black text-gray-900">87%</p>
                 </div>
@@ -477,10 +488,10 @@ export function ReportScreen() {
             </div>
 
             {/* Motor Domain */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8">
+            <div className="dcdt-card p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shadow-sm">
+                  <div className="dcdt-icon-box">
                     <Activity className="w-7 h-7 text-blue-500" />
                   </div>
                   <div>
@@ -500,10 +511,10 @@ export function ReportScreen() {
             </div>
 
             {/* Cognitive Domain */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8">
+            <div className="dcdt-card p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shadow-sm">
+                  <div className="dcdt-icon-box">
                     <Zap className="w-7 h-7 text-blue-500" />
                   </div>
                   <div>
@@ -520,7 +531,7 @@ export function ReportScreen() {
               <div className="flex flex-col gap-3">
                 {cognitiveRules.map(rule => <KRuleRow key={rule.id} rule={rule} lang={lang} />)}
               </div>
-              <div className="mt-6 flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm">
+              <div className="dcdt-info-box mt-6">
                 <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <p className="text-sm text-gray-600 leading-relaxed font-medium">
                   <span className="font-bold text-gray-900">%ThinkTime = {Math.round((thinkSec / totalTime) * 100)}%</span>
@@ -533,10 +544,10 @@ export function ReportScreen() {
             </div>
 
             {/* Timeline */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8">
+            <div className="dcdt-card p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shadow-sm">
+                  <div className="dcdt-icon-box">
                     <TrendingUp className="w-7 h-7 text-blue-500" />
                   </div>
                   <h2 className="text-lg font-bold text-gray-900">
@@ -560,7 +571,7 @@ export function ReportScreen() {
                   { label: lang === 'th' ? 'เวลาที่ใช้คิด' : 'Think Time', value: `${thinkSec}s`, sub: `65%` },
                   { label: lang === 'th' ? 'เวลาลากเส้น' : 'Ink Time', value: `${inkSec}s`, sub: `35%` },
                 ].map(s => (
-                  <div key={s.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+                  <div key={s.label} className="dcdt-card-nested p-4 text-center">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">{s.label}</p>
                     <p className="text-2xl font-black text-gray-900">{s.value}</p>
                     <p className="text-[10px] font-bold text-gray-400 mt-1">{s.sub}</p>

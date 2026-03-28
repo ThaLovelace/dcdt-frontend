@@ -2,7 +2,7 @@
 
 export function ReportScreen() {
   return (
-    <div className="w-full h-full min-h-[600px] bg-background flex flex-col p-4">
+    <div className="w-full h-full min-h-[600px] bg-background flex flex-col p-4 animate-in fade-in duration-500">
       {/* Disclaimer Banner */}
       <header className="mb-4">
         <div className="bg-[#D97706]/10 border-2 border-[#D97706] rounded-xl p-4 flex items-start gap-3">
@@ -55,11 +55,10 @@ export function ReportScreen() {
               <span className="text-sm font-medium text-foreground">AI Confidence Score</span>
               <span className="text-lg font-bold text-primary">85%</span>
             </div>
-            {/* Progress Bar */}
+            {/* Progress Bar (Fixed Inline Style) */}
             <div className="h-3 bg-muted rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary rounded-full transition-all duration-500" 
-                style={{ width: '85%' }}
+                className="h-full bg-primary rounded-full transition-all duration-500 w-[85%]" 
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -143,7 +142,10 @@ export function ReportScreen() {
 
       {/* Bottom Action */}
       <footer className="mt-4">
-        <button className="w-full min-h-[64px] px-6 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 active:scale-[0.98] flex items-center justify-center gap-3">
+        <button 
+          onClick={() => window.location.reload()} 
+          className="w-full min-h-[64px] px-6 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 active:scale-[0.98] flex items-center justify-center gap-3"
+        >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>

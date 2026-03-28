@@ -5,13 +5,13 @@
 
 :root {
   /* Medical High-Contrast Theme */
-  --background: oklch(0.96 0 0); /* Light Gray - Background */
-  --foreground: oklch(0.15 0 0); /* Near Black - Text */
-  --card: oklch(1 0 0); /* Pure White - Canvas */
+  --background: oklch(0.96 0 0);
+  --foreground: oklch(0.15 0 0);
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.45 0.12 250); /* Trust Blue - Primary Action */
+  --primary: oklch(0.45 0.12 250);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.92 0 0);
   --secondary-foreground: oklch(0.15 0 0);
@@ -19,14 +19,14 @@
   --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.92 0.01 250);
   --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.50 0.16 25); /* Accessible Red - Risk */
+  --destructive: oklch(0.50 0.16 25);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.85 0 0);
   --input: oklch(0.92 0 0);
   --ring: oklch(0.45 0.12 250);
   --chart-1: oklch(0.45 0.12 250);
-  --chart-2: oklch(0.50 0.14 145); /* Accessible Green - Normal */
-  --chart-3: oklch(0.60 0.14 70); /* Accessible Orange - Caution */
+  --chart-2: oklch(0.50 0.14 145);
+  --chart-3: oklch(0.60 0.14 70);
   --chart-4: oklch(0.50 0.16 25);
   --chart-5: oklch(0.55 0 0);
   --radius: 0.75rem;
@@ -131,4 +131,89 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer components {
+  .dcdt-btn {
+    @apply flex items-center gap-2 h-12 px-6 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-[0.98];
+  }
+  .dcdt-btn-primary {
+    @apply flex items-center gap-2 h-12 px-6 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] text-white bg-blue-500 hover:bg-blue-600 shadow-md;
+  }
+  .dcdt-btn-outline {
+    @apply flex items-center gap-2 h-12 px-6 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-[0.98] border-2 border-gray-200 bg-white text-gray-700 hover:bg-gray-50;
+  }
+  .dcdt-card {
+    @apply bg-white rounded-[2rem] border border-gray-100 shadow-sm;
+  }
+  .dcdt-card-nested {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+  }
+  .dcdt-info-box {
+    @apply flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm;
+  }
+  .dcdt-status-pill {
+    @apply inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm;
+  }
+  .dcdt-status-pill-pass {
+    @apply inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm bg-emerald-50 text-emerald-700 border border-emerald-100;
+  }
+  .dcdt-status-pill-fail {
+    @apply inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm bg-amber-50 text-amber-700 border border-amber-100;
+  }
+  .dcdt-section-header {
+    @apply flex items-baseline gap-2 mb-5;
+  }
+  .dcdt-section-header-label {
+    @apply text-sm font-bold uppercase tracking-widest text-gray-400;
+  }
+  .dcdt-krule-row-button {
+    @apply w-full flex items-center gap-4 px-4 py-3.5 text-left outline-none;
+  }
+  .dcdt-krule-id-box {
+    @apply flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shadow-sm transition-colors;
+  }
+  .dcdt-icon-box {
+    @apply w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shadow-sm;
+  }
+  .dcdt-page-header-sub {
+    @apply text-xs font-bold uppercase tracking-widest text-gray-400;
+  }
+  .dcdt-modal-overlay {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200;
+  }
+  .dcdt-modal-panel {
+    @apply bg-white rounded-[2rem] w-full max-w-md p-6 md:p-8 shadow-2xl relative max-h-[95vh] overflow-y-auto;
+  }
+  .dcdt-modal-close-btn {
+    @apply absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors;
+  }
+  .dcdt-btn-lg {
+    @apply w-full max-w-md h-14 md:h-16 text-lg rounded-[1.5rem] text-white font-bold bg-blue-500 shadow-lg hover:bg-blue-600 transition-colors active:scale-[0.98];
+  }
+  .dcdt-btn-primary-modal {
+    @apply w-full h-14 rounded-2xl font-bold text-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-md;
+  }
+  .dcdt-btn-secondary-modal {
+    @apply w-full h-14 rounded-2xl font-semibold text-lg border-2 border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors;
+  }
+  .dcdt-btn-success {
+    @apply mt-8 w-full h-14 rounded-2xl font-bold text-lg bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-md;
+  }
+  .dcdt-input {
+    @apply w-full h-14 px-4 rounded-xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-lg font-medium outline-none;
+  }
+  .dcdt-radio-btn {
+    @apply h-14 px-4 rounded-xl border-2 text-left transition-all font-medium;
+  }
+}
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

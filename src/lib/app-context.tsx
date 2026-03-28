@@ -301,6 +301,8 @@ interface AppContextValue {
   setAge: (age: string) => void;
   education: "<8" | ">=8" | null;
   setEducation: (edu: "<8" | ">=8" | null) => void;
+  resultIndex: number | null;
+  setResultIndex: (index: number | null) => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -326,6 +328,7 @@ export function AppProvider({ children, defaultLanguage = "th" }: AppProviderPro
   // ─── เพิ่ม State สำหรับอายุและการศึกษา ───
   const [age, setAge] = useState<string>("");
   const [education, setEducation] = useState<"<8" | ">=8" | null>(null);
+  const [resultIndex, setResultIndex] = useState<number | null>(null);
 
   const setLanguage = useCallback((lang: Language) => {
     setIsChangingLanguage(true);
@@ -364,6 +367,7 @@ export function AppProvider({ children, defaultLanguage = "th" }: AppProviderPro
       // ─── ส่ง State ใหม่เข้าไป ───
       age, setAge,
       education, setEducation,
+      resultIndex, setResultIndex,
     }}>
       {children}
     </AppContext.Provider>

@@ -5,7 +5,7 @@ import { useApp } from '@/lib/app-context'
 import { Brain } from 'lucide-react'
 
 export function LoadingScreen() {
-  const { t, setCurrentScreen } = useApp()
+  const { t, setCurrentScreen, setResultIndex } = useApp()
   const [step, setStep] = useState(0)
   const [progress, setProgress] = useState(0)
 
@@ -32,6 +32,9 @@ export function LoadingScreen() {
 
     // Navigate to report after 3 seconds
     const timeout = setTimeout(() => {
+      // In a real scenario, this would be the result from the API
+      const randomResultIndex = Math.floor(Math.random() * 8)
+      setResultIndex(randomResultIndex)
       setCurrentScreen('report')
     }, 3000)
 
@@ -40,7 +43,7 @@ export function LoadingScreen() {
       clearInterval(stepInterval)
       clearTimeout(timeout)
     }
-  }, [setCurrentScreen, steps.length])
+  }, [setCurrentScreen, setResultIndex, steps.length])
 
   return (
     <div className="flex-1 flex items-center justify-center bg-slate-50 p-4 md:p-8">

@@ -1,13 +1,12 @@
 "use client"
 
-import { AppProvider, useApp, type Screen, type Language } from "@/lib/app-context"
+import { AppProvider, useApp, type Screen } from "@/lib/app-context"
 import { AppHeader } from "@/components/dcdt/app-header"
 import { TutorialScreen } from "@/components/dcdt/tutorial-screen"
 import { PracticeScreen } from "@/components/dcdt/practice-screen"
 import { CanvasScreen } from "@/components/dcdt/canvas-screen"
 import { LoadingScreen } from "@/components/dcdt/loading-screen"
 import { ReportScreen } from "@/components/dcdt/report-screen"
-import { PreparationScreen } from "@/components/dcdt/preparation-screen"
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
 
@@ -22,13 +21,14 @@ function StepIndicator() {
   ]
 
   const activeIndex = STEPS.findIndex(s => s.screens.includes(currentScreen))
+  const ariaValueNow = activeIndex === -1 ? 1 : activeIndex + 1;
 
   return (
     <div
       className="w-full bg-white border-b border-gray-100 px-4 py-5 shadow-sm z-0 relative"
       role="progressbar"
       aria-label={t('stepProgressLabel')}
-      aria-valuenow={activeIndex + 1}
+      aria-valuenow={ariaValueNow}
       aria-valuemin={1}
       aria-valuemax={STEPS.length}
     >
