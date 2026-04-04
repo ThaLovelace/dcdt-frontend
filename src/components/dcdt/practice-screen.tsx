@@ -137,6 +137,7 @@ export function PracticeScreen() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-[2rem] w-full max-w-md p-6 md:p-8 shadow-2xl relative max-h-[95vh] overflow-y-auto scrollbar-hide">
             <button
+              title={t('cancel')}
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
             >

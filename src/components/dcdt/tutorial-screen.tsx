@@ -110,7 +110,11 @@ export function TutorialScreen() {
       {isModalOpen && (
         <div className="dcdt-modal-overlay">
           <div className="dcdt-modal-panel">
-            <button onClick={() => setIsModalOpen(false)} className="dcdt-modal-close-btn">
+            <button 
+              onClick={() => setIsModalOpen(false)} 
+              className="dcdt-modal-close-btn"
+              aria-label="Close modal"
+            >
               <X className="w-6 h-6 text-gray-400" />
             </button>
 

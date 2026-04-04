@@ -1,132 +1,192 @@
-export type Language = 'en' | 'th'
+// File: src/lib/translations.ts
+
+export type Language = "th" | "en";
 
 export const translations = {
+  th: {
+    // General / Headers
+    appTitle: "แบบทดสอบวาดนาฬิกาดิจิทัล",
+    appName: "ระบบประเมินภาวะรู้คิด dCDT",
+    languageToggle: "EN",
+    loading: "กำลังโหลด...",
+    
+    // Progress Steps
+    stepTutorial: "คำแนะนำ",
+    stepPractice: "ซ้อมมือ",
+    stepCanvas: "ทดสอบจริง",
+    stepProcess: "ประมวลผล",
+    stepProgressLabel: "ขั้นตอนการทดสอบ",
+    
+    // Tutorial Screen
+    tutorialTitle: "วิธีการทดสอบ",
+    tutorialSubtitle: "อ่านขั้นตอนด้านล่างก่อนเริ่มการทดสอบ",
+    tutorialStartButton: "เริ่มต้นใช้งาน",
+    tutorialStep1Title: "ทำความคุ้นเคย",
+    tutorialStep1Body: "ก่อนเริ่มทดสอบ จะมีหน้ากระดานให้คุณลองขีดเขียน เพื่อทำความคุ้นเคยกับปากกาและหน้าจอ",
+    tutorialStep2Title: "รับโจทย์ทดสอบ",
+    tutorialStep2Body: "ระบบจะแสดงคำสั่งให้วาดภาพนาฬิกา (ระบบจะเริ่มจับเวลาทันทีเมื่อคุณเข้าสู่หน้านี้)",
+    tutorialStep3Title: "ลงมือวาด",
+    tutorialStep3Body: "วาดภาพนาฬิกาตามคำสั่งที่ได้รับลงในกรอบที่กำหนด เมื่อเสร็จสิ้นให้กดปุ่มส่งผล",
+    
+    // Practice Screen
+    practiceTitle: "ซ้อมมือให้คุ้นเคย",
+    practiceSubtitle: "ลองขีดเขียนบนกระดานด้านล่างเพื่อให้คุ้นเคยกับน้ำหนักปากกา คุณสามารถใช้เวลาได้เต็มที่",
+    clearCanvas: "ลบกระดาน",
+    iAmFamiliar: "คุ้นเคยแล้ว เริ่มต้นการทดสอบจริง",
+    practiceDrawHere: "ลองวาดอะไรก็ได้ที่นี่",
+    practiceHintFree: "วาดได้อย่างอิสระ",
+    practiceHintClear: "ลบกระดานได้ตามต้องการ",
+    
+    // Canvas Screen
+    canvasInstruction: "กรุณาวาดหน้าปัดนาฬิกา ใส่ตัวเลขให้ครบ และตั้งเวลาไว้ที่ 11 นาฬิกา 10 นาที",
+    stylusMode: "โหมดปากกาเท่านั้น",
+    palmRejection: "ป้องกันการสัมผัสจากมือ",
+    restartTest: "เริ่มใหม่",
+    finishSubmit: "วาดเสร็จสิ้น / ส่งผล",
+    drawHere: "วาดรูปนาฬิกาที่นี่",
+    
+    // Popups & Modals
+    askPracticeTitle: "คุณพร้อมหรือยัง?",
+    askPracticeDesc: "คุณต้องการทดลองวาดก่อนเริ่มการทดสอบจริงหรือไม่?",
+    goPracticeBtn: "ใช่, ขอทดลองวาดก่อน",
+    skipPracticeBtn: "ไม่, ข้ามไปทดสอบจริง",
+    preTestModalTitle: "เตรียมพร้อมทดสอบจริง",
+    preTestModalDesc: "กรุณากรอกข้อมูลพื้นฐานก่อนเริ่ม",
+    warningRealTestTitle: "นี่คือการทดสอบจริง",
+    warningRealTestDesc: "เมื่อกดยืนยัน เวลาจะเริ่มเดินทันที",
+    ageLabel: "อายุ",
+    agePlaceholder: "ระบุอายุ (ปี)",
+    eduLabel: "ระดับการศึกษา",
+    eduLessThan8: "ต่ำกว่า 8 ปี",
+    eduMoreThan8: "ตั้งแต่ 8 ปีขึ้นไป",
+    startRealTestBtn: "เริ่มการทดสอบจริง",
+    backToPracticeBtn: "กลับไปซ้อมมือ",
+    
+    // Restart Modal
+    restartConfirmTitle: "ต้องการเริ่มใหม่หรือไม่?",
+    restartConfirmMessage: "คุณแน่ใจหรือไม่ว่าต้องการล้างกระดานและเริ่มทำแบบทดสอบใหม่?",
+    cancel: "ยกเลิก",
+    confirmRestart: "ใช่ เริ่มใหม่",
+    
+    // Loading Screen
+    analyzing: "กำลังวิเคราะห์ภาพวาดของคุณ...",
+    loadingStep1: "วิเคราะห์แรงกดปากกา...",
+    loadingStep2: "ประมวลผลรูปแบบลายเส้น...",
+    loadingStep3: "รันโมเดล ViT AI...",
+    loadingStep4: "สร้างรายงาน...",
+    
+    // Report Screen
+    reportTitle: "ผลการประเมิน",
+    reportSubtitle: "ประมวลผลจาก Kinematic Features และ AI",
+    reportDemographics: "ข้อมูลผู้ทดสอบ",
+    reportAge: "อายุ: {{age}} ปี",
+    reportEducation: "การศึกษา: {{education}}",
+    aiConfidenceScore: "คะแนนความมั่นใจ AI",
+    resultElevatedRisk: "ผลลัพธ์: ตรวจพบความเสี่ยงสูง",
+    resultExpectedRange: "ผลลัพธ์: อยู่ในช่วงปกติ",
+    disclaimer: "นี่คือเครื่องมือคัดกรองเบื้องต้น กรุณาปรึกษาแพทย์เพื่อรับการประเมินทางคลินิกอย่างครบถ้วน",
+    downloadPdfReport: "ดาวน์โหลดรายงาน PDF",
+    returnHome: "กลับหน้าหลัก",
+    timeDistribution: "การกระจายเวลา",
+    thinkTime: "เวลาคิด",
+    drawTime: "เวลาวาด",
+    totalTime: "รวม",
+    velocityProfile: "โปรไฟล์ความเร็ว",
+    drawingSpeedOverTime: "ความเร็วการวาดตามเวลา",
+    ruleBasedAssessment: "การประเมินตามกฎเกณฑ์",
+  },
   en: {
-    // Header
-    appTitle: 'Digital Clock Drawing Test',
+    // General / Headers
+    appTitle: "Digital Clock Drawing Test",
+    appName: "dCDT Cognitive Assessment",
+    languageToggle: "TH",
+    loading: "Loading...",
+    
+    // Progress Steps
+    stepTutorial: "Tutorial",
+    stepPractice: "Practice",
+    stepCanvas: "Test",
+    stepProcess: "Analysis",
+    stepProgressLabel: "Test Progress",
+    
+    // Tutorial Screen
+    tutorialTitle: "How to take the test",
+    tutorialSubtitle: "Please read the instructions below before starting.",
+    tutorialStartButton: "Get Started",
+    tutorialStep1Title: "Familiarization",
+    tutorialStep1Body: "Before the test, you will have a practice board to get used to the pen and screen.",
+    tutorialStep2Title: "Receive Prompt",
+    tutorialStep2Body: "The system will display the clock drawing prompt (The timer starts immediately).",
+    tutorialStep3Title: "Start Drawing",
+    tutorialStep3Body: "Draw the clock as instructed in the designated area. Press submit when done.",
     
     // Practice Screen
     practiceTitle: "Let's get familiar with the screen",
-    practiceSubtitle: 'Feel free to draw anything here to get used to the pen. Take all the time you need.',
-    clearCanvas: 'Clear',
+    practiceSubtitle: "Feel free to draw anything here to get used to the pen. Take all the time you need.",
+    clearCanvas: "Clear",
     iAmFamiliar: "I am familiar, let's start the real test",
-    
-    // Preparation Screen
-    prepTitle: 'Ready for the assessment?',
-    prepSubtitle: 'When you press the button, the timer will start and you will see the instructions.',
-    startTimerButton: 'Start Timer and Show Instruction',
+    practiceDrawHere: "Draw anything here",
+    practiceHintFree: "Draw freely",
+    practiceHintClear: "Clear canvas anytime",
     
     // Canvas Screen
-    canvasInstruction: 'Draw a clock face, add all the numbers, and set the time to 11:10.',
-    stylusMode: 'Stylus Only Mode',
-    palmRejection: 'Palm Rejection',
-    restartTest: 'Restart Test',
-    finishSubmit: 'Finish and Submit',
-    drawHere: 'Draw your clock here',
+    canvasInstruction: "Draw a clock face, add all the numbers, and set the time to 11:10.",
+    stylusMode: "Stylus Only Mode",
+    palmRejection: "Palm Rejection",
+    restartTest: "Restart Test",
+    finishSubmit: "Finish and Submit",
+    drawHere: "Draw your clock here",
     
-    // Restart Confirmation Modal
-    restartConfirmTitle: 'Restart Test?',
-    restartConfirmMessage: 'Are you sure you want to clear the canvas and restart?',
-    cancel: 'Cancel',
-    confirmRestart: 'Yes, Restart',
+    // Popups & Modals
+    askPracticeTitle: "Are you ready?",
+    askPracticeDesc: "Would you like to practice drawing before the real test?",
+    goPracticeBtn: "Yes, let's practice",
+    skipPracticeBtn: "No, skip to real test",
+    preTestModalTitle: "Real Test Approaching",
+    preTestModalDesc: "Please provide basic info before starting",
+    warningRealTestTitle: "This is the real assessment",
+    warningRealTestDesc: "The timer will start immediately upon confirmation.",
+    ageLabel: "Age",
+    agePlaceholder: "Enter age (years)",
+    eduLabel: "Education Level",
+    eduLessThan8: "Less than 8 years",
+    eduMoreThan8: "8 years or more",
+    startRealTestBtn: "Start Real Test",
+    backToPracticeBtn: "Back to Practice",
     
-    // Loading
-    analyzing: 'Analyzing your drawing...',
-    loadingStep1: 'Analyzing pen pressure...',
-    loadingStep2: 'Processing stroke patterns...',
-    loadingStep3: 'Running ViT AI model...',
-    loadingStep4: 'Generating report...',
+    // Restart Modal
+    restartConfirmTitle: "Restart Test?",
+    restartConfirmMessage: "Are you sure you want to clear the canvas and restart?",
+    cancel: "Cancel",
+    confirmRestart: "Yes, Restart",
     
-    // Report - Section 1: Core Result
-    aiConfidenceScore: 'AI Confidence Score',
-    resultElevatedRisk: 'Result: Elevated Risk Detected',
-    resultExpectedRange: 'Result: Expected Range',
-    disclaimer: 'This is a preliminary screening tool. Please consult your physician for a comprehensive clinical evaluation.',
-    downloadPdfReport: 'Download PDF Report',
-    returnHome: 'Return to Home',
+    // Loading Screen
+    analyzing: "Analyzing your drawing...",
+    loadingStep1: "Analyzing pen pressure...",
+    loadingStep2: "Processing stroke patterns...",
+    loadingStep3: "Running ViT AI model...",
+    loadingStep4: "Generating report...",
     
-    // Report - Section 2: Kinematic Biomarkers
-    timeDistribution: 'Time Distribution',
-    thinkTime: 'Think Time',
-    drawTime: 'Draw Time',
-    totalTime: 'Total',
-    velocityProfile: 'Velocity Profile',
-    drawingSpeedOverTime: 'Drawing speed over time',
-    
-    // Report - Section 3: Rule-Based Assessment
-    ruleBasedAssessment: 'Rule-Based Assessment',
-    clockFaceIntegrity: 'Clock Face Integrity',
-    numberSequence: 'Number Sequence 1-12',
-    handPlacement: 'Hand Placement (11:10)',
-    spatialPlanningRestarts: 'Spatial Planning Restarts',
-    userRestarted: 'User restarted',
-    times: 'times',
-    passed: 'Pass',
-    warning: 'Warning',
+    // Report Screen
+    reportTitle: "Assessment Report",
+    reportSubtitle: "Processed from Kinematic Features and AI",
+    reportDemographics: "Test Subject Info",
+    reportAge: "Age: {{age}} years",
+    reportEducation: "Education: {{education}}",
+    aiConfidenceScore: "AI Confidence Score",
+    resultElevatedRisk: "Result: Elevated Risk Detected",
+    resultExpectedRange: "Result: Within Expected Range",
+    disclaimer: "This is a preliminary screening tool. Please consult a doctor for a full clinical evaluation.",
+    downloadPdfReport: "Download PDF Report",
+    returnHome: "Return to Home",
+    timeDistribution: "Time Distribution",
+    thinkTime: "Think Time",
+    drawTime: "Draw Time",
+    totalTime: "Total",
+    velocityProfile: "Velocity Profile",
+    drawingSpeedOverTime: "Drawing Speed Over Time",
+    ruleBasedAssessment: "Rule-Based Assessment",
   },
-  th: {
-    // Header
-    appTitle: 'แบบทดสอบวาดนาฬิกาดิจิทัล',
-    
-    // Practice Screen
-    practiceTitle: 'มาทำความคุ้นเคยกับหน้าจอกัน',
-    practiceSubtitle: 'ลองวาดอะไรก็ได้ที่นี่เพื่อทำความคุ้นเคยกับปากกา ไม่ต้องรีบ',
-    clearCanvas: 'ล้าง',
-    iAmFamiliar: 'คุ้นเคยแล้ว เริ่มทดสอบจริง',
-    
-    // Preparation Screen
-    prepTitle: 'พร้อมสำหรับการประเมินหรือยัง?',
-    prepSubtitle: 'เมื่อคุณกดปุ่ม นาฬิกาจับเวลาจะเริ่มและคุณจะเห็นคำแนะนำ',
-    startTimerButton: 'เริ่มจับเวลาและแสดงคำแนะนำ',
-    
-    // Canvas Screen
-    canvasInstruction: 'วาดหน้าปัดนาฬิกา ใส่ตัวเลขทั้งหมด และตั้งเวลาเป็น 11:10',
-    stylusMode: 'โหมดปากกาเท่านั้น',
-    palmRejection: 'ป้องกันฝ่ามือ',
-    restartTest: 'เริ่มใหม่',
-    finishSubmit: 'เสร็จสิ้นและส่ง',
-    drawHere: 'วาดนาฬิกาของคุณที่นี่',
-    
-    // Restart Confirmation Modal
-    restartConfirmTitle: 'เริ่มใหม่หรือไม่?',
-    restartConfirmMessage: 'คุณแน่ใจหรือไม่ว่าต้องการล้างผืนผ้าใบและเริ่มใหม่?',
-    cancel: 'ยกเลิก',
-    confirmRestart: 'ใช่ เริ่มใหม่',
-    
-    // Loading
-    analyzing: 'กำลังวิเคราะห์ภาพวาดของคุณ...',
-    loadingStep1: 'วิเคราะห์แรงกดปากกา...',
-    loadingStep2: 'ประมวลผลรูปแบบลายเส้น...',
-    loadingStep3: 'รันโมเดล ViT AI...',
-    loadingStep4: 'สร้างรายงาน...',
-    
-    // Report - Section 1: Core Result
-    aiConfidenceScore: 'คะแนนความมั่นใจ AI',
-    resultElevatedRisk: 'ผลลัพธ์: ตรวจพบความเสี่ยงสูง',
-    resultExpectedRange: 'ผลลัพธ์: อยู่ในช่วงปกติ',
-    disclaimer: 'นี่คือเครื่องมือคัดกรองเบื้องต้น กรุณาปรึกษาแพทย์เพื่อรับการประเมินทางคลินิกอย่างครบถ้วน',
-    downloadPdfReport: 'ดาวน์โหลดรายงาน PDF',
-    returnHome: 'กลับหน้าหลัก',
-    
-    // Report - Section 2: Kinematic Biomarkers
-    timeDistribution: 'การกระจายเวลา',
-    thinkTime: 'เวลาคิด',
-    drawTime: 'เวลาวาด',
-    totalTime: 'รวม',
-    velocityProfile: 'โปรไฟล์ความเร็ว',
-    drawingSpeedOverTime: 'ความเร็วการวาดตามเวลา',
-    
-    // Report - Section 3: Rule-Based Assessment
-    ruleBasedAssessment: 'การประเมินตามกฎเกณฑ์',
-    clockFaceIntegrity: 'ความสมบูรณ์ของหน้าปัด',
-    numberSequence: 'ลำดับตัวเลข 1-12',
-    handPlacement: 'ตำแหน่งเข็ม (11:10)',
-    spatialPlanningRestarts: 'การเริ่มวางแผนใหม่',
-    userRestarted: 'ผู้ใช้เริ่มใหม่',
-    times: 'ครั้ง',
-    passed: 'ผ่าน',
-    warning: 'เตือน',
-  }
-} as const
+} as const;
 
-export type TranslationKey = keyof typeof translations.en
+export type TranslationKey = keyof typeof translations.en;
