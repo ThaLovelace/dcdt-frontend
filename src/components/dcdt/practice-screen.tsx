@@ -2,11 +2,12 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useApp } from '@/lib/app-context'
-import { Eraser, ArrowRight, X, PenLine, AlertTriangle, User, GraduationCap } from 'lucide-react'
+import { Eraser, ArrowRight, X, PenLine, AlertTriangle, User, GraduationCap, Clock } from 'lucide-react'
 
 export function PracticeScreen() {
   const { setCurrentScreen, t, age, setAge, education, setEducation } = useApp()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showTimerWarning, setShowTimerWarning] = useState(false)
 
   // ── Drawing state & refs ──────────────────────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -68,7 +69,7 @@ export function PracticeScreen() {
   const handleStartRealTest = () => {
     if (age && education) {
       setIsModalOpen(false)
-      setCurrentScreen('canvas')
+      setShowTimerWarning(true)
     }
   }
 
@@ -174,27 +175,25 @@ export function PracticeScreen() {
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <GraduationCap className="w-4 h-4 text-blue-500" /> {t('eduLabel')}
                 </label>
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={() => setEducation('<8')}
-                    className={`h-14 px-4 rounded-xl border-2 text-left transition-all font-medium ${
-                      education === '<8' 
-                      ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                      : 'border-gray-100 text-gray-600 hover:bg-gray-50'
-                    }`}
+                <div className="relative">
+                  <select
+                    value={education}
+                    onChange={(e) => setEducation(e.target.value)}
+                    className="w-full h-14 px-4 rounded-xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-base font-medium outline-none appearance-none cursor-pointer"
                   >
-                    {t('eduLessThan8')}
-                  </button>
-                  <button
-                    onClick={() => setEducation('>=8')}
-                    className={`h-14 px-4 rounded-xl border-2 text-left transition-all font-medium ${
-                      education === '>=8' 
-                      ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                      : 'border-gray-100 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {t('eduMoreThan8')}
-                  </button>
+                    <option value="" disabled>{t('eduSelectPlaceholder')}</option>
+                    <option value="0">{t('eduLevel0')}</option>
+                    <option value="4">{t('eduLevel4')}</option>
+                    <option value="6">{t('eduLevel6')}</option>
+                    <option value="9">{t('eduLevel9')}</option>
+                    <option value="12">{t('eduLevel12')}</option>
+                    <option value="14">{t('eduLevel14')}</option>
+                    <option value="16">{t('eduLevel16')}</option>
+                    <option value="18">{t('eduLevel18')}</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -212,6 +211,33 @@ export function PracticeScreen() {
                 className="w-full h-14 rounded-2xl font-semibold text-lg text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 {t('backToPracticeBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timer Modal */}
+      {showTimerWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-[100] p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="w-10 h-10 text-amber-600 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-4 text-center">{t('readyToStartTitle')}</h2>
+            <p className="text-gray-600 mb-8 text-center leading-relaxed">{t('readyToStartMsg')}</p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => { setShowTimerWarning(false); setCurrentScreen('canvas'); }}
+                className="w-full h-16 bg-blue-600 text-white text-lg font-bold rounded-2xl shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+              >
+                {t('confirmStart')}
+              </button>
+              <button 
+                onClick={() => { setShowTimerWarning(false); setIsModalOpen(true); }}
+                className="w-full h-14 text-gray-400 font-bold text-base hover:text-gray-600"
+              >
+                {t('cancel')}
               </button>
             </div>
           </div>

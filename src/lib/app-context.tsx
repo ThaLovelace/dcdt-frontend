@@ -24,7 +24,7 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
+  t: (key: any, vars?: Record<string, string | number>) => string;
   isChangingLanguage: boolean;
   
   // Test Lifecycle Management
@@ -77,8 +77,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Translation function with dynamic variable replacement
   const t = useCallback(
-    (key: TranslationKey, vars?: Record<string, string | number>): string => {
-      const raw: string = translations[language][key] ?? key;
+    (key: any, vars?: Record<string, string | number>): string => {
+      const dict = translations[language] as Record<string, string>;
+      const raw: string = dict[key] ?? key;
       if (!vars) return raw;
       return raw.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? `{{${k}}}`));
     },

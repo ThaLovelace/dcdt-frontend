@@ -208,10 +208,10 @@ export function CanvasScreen() {
     const payload = {
       strokes: strokesRef.current,
       image_b64: imageB64,
-      patient_age: age ? parseInt(age, 10) : 0, 
-      education_years: education ? parseInt(education, 10) : 0, // Direct conversion!
+      patient_age: age ? parseInt(age as string, 10) : 0, 
+      education_years: education ? parseInt(education as string, 10) : 0,
       device_dpi: currentDpi
-    }
+    };
 
     try {
       // Endpoint updated to /analyze

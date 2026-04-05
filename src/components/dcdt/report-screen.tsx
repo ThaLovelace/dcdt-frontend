@@ -35,6 +35,7 @@ interface AnalysisPayload {
     ai_abnormal: boolean;
   };
   warnings: string[];
+  velocity_profile?: number[];
 }
 
 // -----------------------------------------------------------------------------
@@ -91,6 +92,70 @@ const getRiskLevelConfig = (classId: string, lang: string) => {
     colorBorder: 'border-red-300',
     icon: <AlertOctagon className="w-14 h-14 text-red-500 mb-4" />
   }
+}
+
+// -----------------------------------------------------------------------------
+// Timeline Component
+// -----------------------------------------------------------------------------
+
+function SparkLine({ points }: { points: number[] }) {
+  if (!points || points.length === 0) return null;
+
+  const W = 300, H = 80, pad = 8;
+  const chartW = W - pad * 2;
+  const chartH = H - pad * 2;
+
+  // Dynamic Normalization: Find Min / Max of actual data
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1; 
+
+  // Normalize points 0 to 1
+  const normalizedPoints = points.map(p => (p - min) / range);
+
+  // Safely calculate X coordinate to prevent division by zero
+  const getX = (i: number, len: number) => {
+    if (len === 1) return pad + chartW / 2; // Center if only 1 point
+    return pad + (i / (len - 1)) * chartW;
+  };
+
+  const path = normalizedPoints
+    .map((p, i) => {
+      const x = getX(i, normalizedPoints.length);
+      const y = pad + (1 - p) * chartH;
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    })
+    .join(' ');
+
+  // If there's only 1 point, we don't draw an area fill
+  const area = normalizedPoints.length > 1 
+    ? `${path} L ${pad + chartW} ${pad + chartH} L ${pad} ${pad + chartH} Z`
+    : "";
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto max-h-[100px] drop-shadow-sm">
+      <defs>
+        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {area && <path d={area} fill="url(#spark-fill)" />}
+      
+      {/* If it's a single point, we don't need a connecting line, just the circle */}
+      {normalizedPoints.length > 1 && (
+        <path d={path} fill="none" stroke="#3b82f6" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      
+      {normalizedPoints.map((p, i) => {
+        const x = getX(i, normalizedPoints.length);
+        const y = pad + (1 - p) * chartH;
+        return (
+          <circle key={i} cx={x} cy={y} r={3.5} fill="#ffffff" stroke="#3b82f6" strokeWidth={2} />
+        );
+      })}
+    </svg>
+  )
 }
 
 // -----------------------------------------------------------------------------
@@ -174,7 +239,7 @@ export function ReportScreen() {
   const classId = analysisData?.class_id || 'C0';
   const RESULT = C_LEVELS.find(c => c.level === classId) || C_LEVELS[0];
 
-  // 3. Extract Triggers (No longer hardcoded in Frontend!)
+  // 3. Extract Triggers
   const domain = analysisData?.domain || {
     k1_triggered: false, k2_triggered: false, k3_triggered: false,
     k4_triggered: false, k5_triggered: false,
@@ -201,7 +266,7 @@ export function ReportScreen() {
   const inkPercent = 100 - thinkPercent;
   const thinkSec = Math.round((thinkPercent / 100) * totalTime);
   const inkSec = totalTime - thinkSec;
-  const strokeCount = 14; // Default visual mockup
+  const TIMELINE = analysisData?.velocity_profile || [];
   
   const riskColor = RESULT.color;
   const lang = language;
@@ -442,6 +507,45 @@ export function ReportScreen() {
                   <span className="font-bold text-gray-900">%ThinkTime = {Math.round(thinkPercent)}%</span>{' — '}
                   {lang === 'th' ? 'สัดส่วนเวลาที่หยุดคิดเพื่อดึงข้อมูลจากความจำ ค่าสูงบ่งชี้ภาวะ Memory Retrieval Deficit' : 'Proportion of time paused to retrieve information from memory. High values indicate Memory Retrieval Deficit.'}
                 </p>
+              </div>
+            </div>
+
+            {/* Timeline (Velocity Profile) */}
+            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50">
+                    <TrendingUp className="w-7 h-7 text-blue-500" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {lang === 'th' ? 'ลำดับและความเร็วของการลากเส้น' : 'Velocity Profile'}
+                  </h2>
+                </div>
+                <span className="text-sm font-bold text-gray-500 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-xl shadow-sm">
+                  {TIMELINE.length > 0 ? TIMELINE.length : 0} strokes
+                </span>
+              </div>
+              
+              <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                <SparkLine points={TIMELINE.length > 0 ? TIMELINE : [0, 0]} />
+                <div className="flex justify-between mt-3 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{lang === 'th' ? 'เริ่มต้น' : 'Start'}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{lang === 'th' ? 'สิ้นสุด' : 'End'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                {[
+                  { label: lang === 'th' ? 'เวลารวม' : 'Total Time', value: `${totalTime}s`, sub: lang === 'th' ? 'ทั้งหมด' : 'overall' },
+                  { label: lang === 'th' ? 'เวลาที่ใช้คิด' : 'Think Time', value: `${thinkSec}s`, sub: `${Math.round(thinkPercent)}%` },
+                  { label: lang === 'th' ? 'เวลาลากเส้น' : 'Ink Time', value: `${inkSec}s`, sub: `${Math.round(inkPercent)}%` },
+                ].map(s => (
+                  <div key={s.label} className="bg-white rounded-xl p-4 text-center border border-gray-100 shadow-sm">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">{s.label}</p>
+                    <p className="text-2xl font-black text-gray-900">{s.value}</p>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1">{s.sub}</p>
+                  </div>
+                ))}
               </div>
             </div>
 

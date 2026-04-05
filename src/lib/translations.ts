@@ -27,6 +27,8 @@ export const translations = {
     tutorialStep2Body: "ระบบจะแสดงคำสั่งให้วาดภาพนาฬิกา (ระบบจะเริ่มจับเวลาทันทีเมื่อคุณเข้าสู่หน้านี้)",
     tutorialStep3Title: "ลงมือวาด",
     tutorialStep3Body: "วาดภาพนาฬิกาตามคำสั่งที่ได้รับลงในกรอบที่กำหนด เมื่อเสร็จสิ้นให้กดปุ่มส่งผล",
+    tutorialStep4Title: "สร้างรายงาน",
+    tutorialStep4Body: "ระบบจะประมวลผลภาพวาดของคุณและสร้างรายงานผลการประเมิน",
     
     // Practice Screen
     practiceTitle: "ซ้อมมือให้คุ้นเคย",
@@ -94,6 +96,20 @@ export const translations = {
     velocityProfile: "โปรไฟล์ความเร็ว",
     drawingSpeedOverTime: "ความเร็วการวาดตามเวลา",
     ruleBasedAssessment: "การประเมินตามกฎเกณฑ์",
+
+    // NEW ADDITIONS
+    eduSelectPlaceholder: "-- เลือกระดับการศึกษา --",
+    eduLevel0: "ไม่ได้ศึกษา (0 ปี)",
+    eduLevel4: "ประถมศึกษาตอนต้น ป.1-4 (4 ปี)",
+    eduLevel6: "ประถมศึกษาตอนปลาย ป.5-6 (6 ปี)",
+    eduLevel9: "มัธยมศึกษาตอนต้น (9 ปี)",
+    eduLevel12: "มัธยมศึกษาตอนปลาย (12 ปี)",
+    eduLevel14: "อนุปริญญา (14 ปี)",
+    eduLevel16: "ปริญญาตรี (16 ปี)",
+    eduLevel18: "สูงกว่าปริญญาตรี (18+ ปี)",
+    readyToStartTitle: "พร้อมเริ่มทำแบบทดสอบ?",
+    readyToStartMsg: "เมื่อกด \"ตกลง\" ระบบจะเริ่มจับเวลาทันที โปรดวาดให้ต่อเนื่องจนจบ",
+    confirmStart: "ตกลง, เริ่มจับเวลา",
   },
   en: {
     // General / Headers
@@ -119,6 +135,8 @@ export const translations = {
     tutorialStep2Body: "The system will display the clock drawing prompt (The timer starts immediately).",
     tutorialStep3Title: "Start Drawing",
     tutorialStep3Body: "Draw the clock as instructed in the designated area. Press submit when done.",
+    tutorialStep4Title: "Generate Report",
+    tutorialStep4Body: "The system will process your drawing and generate an assessment report.",
     
     // Practice Screen
     practiceTitle: "Let's get familiar with the screen",
@@ -186,6 +204,20 @@ export const translations = {
     velocityProfile: "Velocity Profile",
     drawingSpeedOverTime: "Drawing Speed Over Time",
     ruleBasedAssessment: "Rule-Based Assessment",
+
+    // NEW ADDITIONS
+    eduSelectPlaceholder: "-- Select Education Level --",
+    eduLevel0: "None (0 years)",
+    eduLevel4: "Primary School 1-4 (4 years)",
+    eduLevel6: "Primary School 5-6 (6 years)",
+    eduLevel9: "Middle School (9 years)",
+    eduLevel12: "High School (12 years)",
+    eduLevel14: "Diploma (14 years)",
+    eduLevel16: "Bachelor's Degree (16 years)",
+    eduLevel18: "Postgraduate (18+ years)",
+    readyToStartTitle: "Ready to start?",
+    readyToStartMsg: "When you click \"Confirm\", the timer will start immediately. Please draw continuously.",
+    confirmStart: "Confirm & Start Timer",
   },
 } as const;
 
