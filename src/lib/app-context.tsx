@@ -11,7 +11,44 @@ import React, {
   ReactNode,
 } from "react";
 // Import translations and types from the external file
-import { translations, TranslationKey, Language } from "./translations";
+import { translations, Language } from "./translations";
+
+// V2.0 Type Definitions for Backend Response
+export interface KinematicResult {
+  K1_rms_cm: number | null;
+  K2_velocity_cms: number | null;
+  K3_pressure_avg: number | null;
+  K3_pressure_decrement: number | null;
+  K4_pct_think_time: number | null;
+  K5_pfhl_ms: number | null;
+  flags: string[];
+}
+
+export interface DomainResult {
+  motor_abnormal: boolean;
+  cognitive_abnormal: boolean;
+  ai_abnormal: boolean;
+  k1_triggered: boolean;
+  k2_triggered: boolean;
+  k3_triggered: boolean;
+  k4_triggered: boolean;
+  k5_triggered: boolean;
+}
+
+export interface AnalysisResponse {
+  class_id: string;
+  risk_level: 'normal' | 'mild' | 'high';
+  risk_color: 'green' | 'yellow' | 'red';
+  kinematic: KinematicResult;
+  domain: DomainResult;
+  warnings: string[];
+  model_version: string;
+  velocity_profile: number[];
+  xai_evidence_b64: string | null;
+  // --- New Fields ---
+  ai_confidence: number;            // Confidence score 0-100
+  processed_image_b64: string | null; // Centered input image
+}
 
 export type Screen = "tutorial" | "practice" | "canvas" | "loading" | "report";
 
@@ -24,7 +61,7 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
-  t: (key: any, vars?: Record<string, string | number>) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   isChangingLanguage: boolean;
   
   // Test Lifecycle Management
@@ -44,8 +81,9 @@ interface AppContextType {
   resultIndex: number;
   setResultIndex: (index: number) => void;
 
-  analysisData: object | null;
-  setAnalysisData: React.Dispatch<React.SetStateAction<object | null>>;
+  // Analysis Data state using the exact V2.0 schema
+  analysisData: AnalysisResponse | null;
+  setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisResponse | null>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -63,7 +101,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [age, setAge] = useState<string>("");
   const [education, setEducation] = useState<string>("");
   const [resultIndex, setResultIndex] = useState<number>(0);
-  const [analysisData, setAnalysisData] = useState<object | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
 
   // Language Handlers
   const toggleLanguage = useCallback(() => {
@@ -77,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Translation function with dynamic variable replacement
   const t = useCallback(
-    (key: any, vars?: Record<string, string | number>): string => {
+    (key: string, vars?: Record<string, string | number>): string => {
       const dict = translations[language] as Record<string, string>;
       const raw: string = dict[key] ?? key;
       if (!vars) return raw;

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from 'react'
-import { useApp } from '@/lib/app-context'
+import { useApp, AnalysisResponse } from '@/lib/app-context'
 import {
   Home, Download, CheckCircle2, AlertTriangle,
-  Brain, Activity, Zap, Eye, EyeOff,
+  Brain, Activity, Zap,
   ChevronDown, Info, TrendingUp, AlertOctagon
 } from 'lucide-react'
 
+/*
 // -----------------------------------------------------------------------------
 // V2.0 Type Definitions for Backend Response
 // -----------------------------------------------------------------------------
@@ -37,6 +38,7 @@ interface AnalysisPayload {
   warnings: string[];
   velocity_profile?: number[];
 }
+*/
 
 // -----------------------------------------------------------------------------
 // Clinical Data Configuration
@@ -183,19 +185,6 @@ function StatusPill({ pass, passLabel, failLabel }: { pass: boolean; passLabel: 
   )
 }
 
-function AIOverlay() {
-  return (
-    <div className="absolute inset-0 pointer-events-none">
-      <div className="absolute border-2 border-red-400/80 bg-red-400/10 rounded-2xl shadow-sm top-[18%] left-[55%] w-[22%] h-[18%]">
-        <span className="absolute -top-5 left-0 text-[10px] font-bold text-red-600 bg-white/95 px-2 py-0.5 rounded-lg shadow-sm border border-red-100">Digits</span>
-      </div>
-      <div className="absolute border-2 border-amber-400/80 bg-amber-400/10 rounded-full shadow-sm top-[38%] left-[38%] w-[24%] h-[24%]">
-        <span className="absolute -bottom-5 left-0 text-[10px] font-bold text-amber-700 bg-white/95 px-2 py-0.5 rounded-lg shadow-sm border border-amber-100">Hands</span>
-      </div>
-    </div>
-  )
-}
-
 function KRuleRow({ rule, lang }: { rule: typeof K_RULES_BASE[0] & { detected: boolean }; lang: string }) {
   const [open, setOpen] = useState(false)
   return (
@@ -229,11 +218,10 @@ function KRuleRow({ rule, lang }: { rule: typeof K_RULES_BASE[0] & { detected: b
 // -----------------------------------------------------------------------------
 
 export function ReportScreen() {
-  const { t, language, setCurrentScreen, restartCount, getTCT, resetRestartCount, analysisData: rawAnalysisData } = useApp()
-  const [showAIOverlay, setShowAIOverlay] = useState(false)
+  const { t, language, setCurrentScreen, getTCT, resetRestartCount, analysisData: rawAnalysisData } = useApp()
 
   // 1. Cast context data to our updated V2.0 interface
-  const analysisData = rawAnalysisData as AnalysisPayload | undefined | null;
+  const analysisData = rawAnalysisData as AnalysisResponse | undefined | null;
 
   // 2. Extract Class ID and map to Local Configuration
   const classId = analysisData?.class_id || 'C0';
@@ -258,7 +246,6 @@ export function ReportScreen() {
 
   const motorAbnormal = domain.motor_abnormal;
   const cognitiveAbnormal = domain.cognitive_abnormal;
-  const aiStatus = domain.ai_abnormal ? 'Dementia' : 'Normal';
 
   // 4. Handle Timing & Variables
   const totalTime = getTCT() || 45;
@@ -333,22 +320,17 @@ export function ReportScreen() {
 
           {/* LEFT COLUMN */}
           <div className="lg:col-span-4 flex flex-col gap-6 md:gap-8">
-
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8">
               <SectionHeader label={lang === 'th' ? 'ระดับความเสี่ยง' : 'Risk Level'} sub="Classification" />
-              
               <div className={`mt-4 rounded-[2rem] p-8 border-2 shadow-sm flex flex-col items-center text-center transition-all ${riskConfig.colorBg} ${riskConfig.colorBorder}`}>
                 {riskConfig.icon}
                 <h2 className={`text-2xl md:text-3xl font-black mb-3 ${riskConfig.colorText}`}>{riskConfig.levelText}</h2>
                 <p className={`text-sm md:text-base font-medium leading-relaxed opacity-90 ${riskConfig.colorText}`}>{riskConfig.descText}</p>
               </div>
-
               <div className="my-8 border-t-2 border-gray-100" />
-
               <p className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">
                 {lang === 'th' ? 'รายละเอียดกลุ่มอาการ (C-Series)' : 'Clinical Details'}
               </p>
-
               <div className="rounded-2xl p-5 mb-4 border-l-4 shadow-sm bg-white" style={{ borderLeftColor: riskColor }}>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl font-black" style={{ color: riskColor }}>{RESULT.level}</span>
@@ -356,7 +338,6 @@ export function ReportScreen() {
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed font-medium">{lang === 'th' ? RESULT.clinicalTH : RESULT.clinicalEN}</p>
               </div>
-
               <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <p className="text-sm text-gray-600 leading-relaxed">
@@ -364,7 +345,6 @@ export function ReportScreen() {
                   {lang === 'th' ? RESULT.actionTH : RESULT.actionEN}
                 </p>
               </div>
-
               <div className="mt-6 grid grid-cols-4 gap-2">
                 {C_LEVELS.map(c => (
                   <div key={c.level} className={`rounded-2xl py-2.5 text-center transition-all duration-300 ${c.level === RESULT.level ? 'border-2 shadow-md scale-[1.03]' : 'border border-gray-100 bg-gray-50/50 opacity-50'}`} style={{ borderColor: c.level === RESULT.level ? c.color : '#f3f4f6', backgroundColor: c.level === RESULT.level ? `${c.color}15` : '' }}>
@@ -383,12 +363,10 @@ export function ReportScreen() {
               <p className="text-sm text-gray-500 leading-relaxed mb-6 font-medium">
                 {lang === 'th' ? 'เวลาตั้งแต่เริ่มอ่านคำสั่งจนวาดเข็มนาฬิกาเสร็จสิ้น' : 'Time from reading instructions to completing the clock hands'}
               </p>
-
               <div className="w-full h-4 rounded-full overflow-hidden bg-gray-100 mb-4 flex shadow-inner">
                 <div className="h-full rounded-l-full bg-blue-300" style={{ width: `${thinkPercent}%` }} />
                 <div className="h-full rounded-r-full flex-1 bg-blue-500" />
               </div>
-              
               <div className="flex gap-6">
                 <div className="flex items-center gap-2.5">
                   <div className="w-3 h-3 rounded-full shadow-sm bg-blue-300" />
@@ -405,68 +383,103 @@ export function ReportScreen() {
                   </div>
                 </div>
               </div>
-
-              <div className="mt-8 pt-5 border-t-2 border-gray-100 flex items-center gap-8">
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">{lang === 'th' ? 'รีสตาร์ท' : 'Restarts'}</p>
-                  <p className="text-2xl font-black text-gray-900">{restartCount}</p>
-                </div>
-              </div>
             </div>
-
           </div>
 
           {/* RIGHT COLUMN */}
           <div className="lg:col-span-8 flex flex-col gap-6 md:gap-8">
+            {/* --- 1. AI Structural Analysis Section (Enhanced) --- */}
+<div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+  {/* Header with Confidence Gauge */}
+  <div className="flex items-center justify-between px-6 py-5 border-b-2 border-gray-50">
+    <div className="flex items-center gap-4">
+      <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50">
+        <Brain className="w-7 h-7 text-blue-500" />
+      </div>
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">{lang === 'th' ? 'ผลการวิเคราะห์โดย AI' : 'AI Analysis'}</h2>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">ViT-B/16 Engine</span>
+          <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+          <span className={`text-xs font-black ${(analysisData?.ai_confidence ?? 0) > 80 ? 'text-emerald-500' : 'text-amber-500'}`}>
+            {analysisData?.ai_confidence?.toFixed(1)}% {lang === 'th' ? 'ความมั่นใจ' : 'Confidence'}
+          </span>
+        </div>
+      </div>
+    </div>
+    <StatusPill 
+      pass={!domain.ai_abnormal} 
+      passLabel={lang === 'th' ? 'ปกติ' : 'Normal'} 
+      failLabel={lang === 'th' ? 'ผิดปกติ' : 'Dementia'} 
+    />
+  </div>
 
-            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between px-6 py-5 border-b-2 border-gray-50 bg-white">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50">
-                    <Brain className="w-7 h-7 text-blue-500" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">{lang === 'th' ? 'โครงสร้าง (Structural)' : 'Structural Analysis'}</h2>
-                    <p className="text-sm font-medium text-gray-500 mt-0.5">Vision Transformer (ViT) Model</p>
-                  </div>
-                </div>
-                <StatusPill pass={!domain.ai_abnormal} passLabel={lang === 'th' ? 'ปกติ' : 'Normal'} failLabel={lang === 'th' ? 'ผิดปกติ' : 'Dementia'} />
-              </div>
+  <div className="p-6 bg-gray-50/30">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      {/* View 1: Centered Input (What AI sees) */}
+        <div className="flex flex-col gap-3">
+          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest text-center">
+            {lang === 'th' ? 'ภาพที่ AI ใช้ประมวลผล' : 'Processed Input'}
+          </span>
+          <div className="relative aspect-square rounded-[1.5rem] overflow-hidden border-2 border-white bg-white shadow-sm ring-1 ring-black/5">
+            {analysisData?.processed_image_b64 ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={analysisData.processed_image_b64.startsWith('data:')                  ? analysisData.processed_image_b64 
+                  : `data:image/png;base64,${analysisData.processed_image_b64}`
+                } 
+                className="w-full h-full object-contain"
+                alt="Centered Input"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-300 text-xs italic">No Processed Image</div>
+            )}
+          </div>
+        </div>
 
-              <div className="grid grid-cols-2 gap-4 px-6 pt-6 bg-gray-50/30">
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-                  <p className="text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{lang === 'th' ? 'ผลการทำนาย' : 'Prediction'}</p>
-                  <p className="text-xl font-black text-gray-900">{aiStatus}</p>
-                </div>
-              </div>
+        {/* View 2: XAI Heatmap (What AI focuses on) */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
+              {lang === 'th' ? 'จุดที่ AI ให้ความสำคัญ' : 'AI Attention Map'}
+            </span>
+            <Info className="w-3 h-3 text-gray-300 cursor-help" />
+          </div>
+          <div className="relative aspect-square rounded-[1.5rem] overflow-hidden border-2 border-white bg-white shadow-sm ring-1 ring-black/5">
+            {analysisData?.xai_evidence_b64 ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={analysisData.xai_evidence_b64.startsWith('data:')                  ? analysisData.xai_evidence_b64 
+                  : `data:image/png;base64,${analysisData.xai_evidence_b64}`
+                } 
+                className="w-full h-full object-contain"
+                alt="AI Heatmap"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-300 text-xs italic">No Attention Map</div>
+            )}
+          </div>
+        </div>
 
-              <div className="px-6 py-8 flex-1 bg-gray-50/30">
-                <div className="relative w-full max-w-sm mx-auto">
-                  <button onClick={() => setShowAIOverlay(v => !v)} className={`absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all duration-300 shadow-sm ${showAIOverlay ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                    {showAIOverlay ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    {lang === 'th' ? 'AI Overlay' : 'AI Overlay'}
-                  </button>
+      </div>
 
-                  <div className="relative aspect-square rounded-[2rem] overflow-hidden border-2 border-gray-100 bg-gray-100/50 shadow-inner">
-                    <div className="absolute inset-4 flex items-center justify-center bg-white rounded-[1.5rem] shadow-sm">
-                      <svg viewBox="0 0 200 200" className="w-full h-full opacity-[0.25]">
-                        <circle cx="100" cy="100" r="90" fill="none" stroke="#111827" strokeWidth="4"/>
-                        {[12,1,2,3,4,5,6,7,8,9,10,11].map((n, i) => {
-                          const a = (i * 30 - 90) * Math.PI / 180
-                          return <text key={n} x={100 + 72 * Math.cos(a)} y={100 + 72 * Math.sin(a)} textAnchor="middle" dominantBaseline="central" fontSize="16" fontWeight="700" fill="#111827">{n}</text>
-                        })}
-                        <line x1="100" y1="100" x2="65"  y2="55"  stroke="#111827" strokeWidth="6" strokeLinecap="round"/>
-                        <line x1="100" y1="100" x2="148" y2="62"  stroke="#111827" strokeWidth="4" strokeLinecap="round"/>
-                        <circle cx="100" cy="100" r="6" fill="#111827"/>
-                      </svg>
-                    </div>
-                    {showAIOverlay && <div className="absolute inset-4"><AIOverlay /></div>}
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-gray-400 mt-6 text-center">* GradCAM highlights regions the AI focused on during diagnosis</p>
-              </div>
-            </div>
+      {/* Replay Controls Placeholder */}
+      <div className="mt-8 flex flex-col items-center border-t border-gray-100 pt-6">
+        <button className="flex items-center gap-3 px-8 py-3 rounded-full bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
+            <Zap className="w-5 h-5 text-blue-500 fill-blue-50 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-bold text-gray-700">
+              {lang === 'th' ? 'ดูวิดีโอลำดับการวาด (Replay)' : 'Replay Drawing Order'}
+            </span>
+        </button>
+        <p className="text-[10px] font-medium text-gray-400 mt-3 text-center max-w-xs">
+          * {lang === 'th' ? 'ลำดับการวาดช่วยให้แพทย์วินิจฉัยกระบวนการวางแผน (Executive Function) ได้ชัดเจนขึ้น' : 'Replaying the sequence helps clinical observation of executive planning.'}
+        </p>
+      </div>
+    </div>
+  </div>
 
+            {/* Motor Domain Card */}
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -485,6 +498,7 @@ export function ReportScreen() {
               </div>
             </div>
 
+            {/* Cognitive Domain Card */}
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -502,15 +516,17 @@ export function ReportScreen() {
                 {cognitiveRules.map(rule => <KRuleRow key={rule.id} rule={rule} lang={lang} />)}
               </div>
               <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100 mt-6">
-                <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                <p className="text-sm text-gray-600 leading-relaxed font-medium">
-                  <span className="font-bold text-gray-900">%ThinkTime = {Math.round(thinkPercent)}%</span>{' — '}
-                  {lang === 'th' ? 'สัดส่วนเวลาที่หยุดคิดเพื่อดึงข้อมูลจากความจำ ค่าสูงบ่งชี้ภาวะ Memory Retrieval Deficit' : 'Proportion of time paused to retrieve information from memory. High values indicate Memory Retrieval Deficit.'}
-                </p>
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                    <span className="font-bold text-gray-900">%ThinkTime = {Math.round(thinkPercent)}%</span>{' — '}
+                    {lang === 'th' ? 'สัดส่วนเวลาที่หยุดคิดเพื่อดึงข้อมูลจากความจำ ค่าสูงบ่งชี้ภาวะ Memory Retrieval Deficit' : 'Proportion of time paused to retrieve information from memory. High values indicate Memory Retrieval Deficit.'}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Timeline (Velocity Profile) */}
+            {/* Timeline Section */}
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -525,7 +541,6 @@ export function ReportScreen() {
                   {TIMELINE.length > 0 ? TIMELINE.length : 0} strokes
                 </span>
               </div>
-              
               <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
                 <SparkLine points={TIMELINE.length > 0 ? TIMELINE : [0, 0]} />
                 <div className="flex justify-between mt-3 mb-1">
@@ -533,7 +548,6 @@ export function ReportScreen() {
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{lang === 'th' ? 'สิ้นสุด' : 'End'}</span>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-4 mt-6">
                 {[
                   { label: lang === 'th' ? 'เวลารวม' : 'Total Time', value: `${totalTime}s`, sub: lang === 'th' ? 'ทั้งหมด' : 'overall' },
@@ -548,10 +562,10 @@ export function ReportScreen() {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
 
+        {/* Footer Disclaimer */}
         <div className="mt-10 pb-6 flex items-start gap-3 px-4">
           <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
           <p className="text-sm text-gray-500 leading-relaxed font-medium">
@@ -562,5 +576,5 @@ export function ReportScreen() {
 
       </div>
     </div>
-  )
+  );
 }

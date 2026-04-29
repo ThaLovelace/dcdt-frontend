@@ -22,7 +22,7 @@ interface Point {
   y: number
 }
 
-const BACKEND_URL = 'http://127.0.0.1:8000'
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
 export function CanvasScreen() {
   const { 
@@ -111,35 +111,62 @@ export function CanvasScreen() {
     return ctx
   }, [])
 
-  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point | null => {
-    const canvas = canvasRef.current
-    if (!canvas) return null
-    if (stylusOnly && e.pointerType === 'touch') return null
-    const rect = canvas.getBoundingClientRect()
+  // ---------------------------------------------------------------------------
+  // Coordinate helper — works with both React synthetic events and raw
+  // PointerEvent objects (needed for getCoalescedEvents).
+  //
+  // Fix (audit §1): applies CSS-scale correction so that coordinates are
+  // accurate even when the canvas element is scaled by a responsive layout.
+  //   scaleX = canvas backing-store width  / CSS display width  / DPR
+  //   scaleY = canvas backing-store height / CSS display height / DPR
+  // Without this, K1 RMS and K2 velocity are off by the CSS scale factor.
+  // ---------------------------------------------------------------------------
+  const getCoordinatesFromNative = (
+    ev: PointerEvent,
+    canvas: HTMLCanvasElement
+  ): Point | null => {
+    if (stylusOnly && ev.pointerType === 'touch') return null
+    const rect   = canvas.getBoundingClientRect()
+    const dpr    = window.devicePixelRatio || 1
+    const scaleX = canvas.width  / rect.width  / dpr
+    const scaleY = canvas.height / rect.height / dpr
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (ev.clientX - rect.left) * scaleX,
+      y: (ev.clientY - rect.top)  * scaleY,
     }
   }
 
-  const extractStrokePoint = (
-    e: React.PointerEvent<HTMLCanvasElement>,
-    point: Point,
+  // Thin wrapper for React synthetic events (pointerdown / pointerup)
+  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point | null => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    return getCoordinatesFromNative(e.nativeEvent as PointerEvent, canvas)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build a single StrokePoint from a raw PointerEvent + pre-computed canvas
+  // coordinates.  Accepting a raw PointerEvent (instead of a React synthetic
+  // event) lets us call this function on coalesced events too.
+  // ---------------------------------------------------------------------------
+  const buildStrokePoint = (
+    ev:             PointerEvent,
+    point:          Point,
     currentStrokeId: number
   ): StrokePoint => {
-    const nativeEvent = e.nativeEvent as PointerEvent
-    const pressure = typeof nativeEvent.pressure === 'number' && nativeEvent.pressure > 0 ? nativeEvent.pressure : 0.5
-    const azimuth = typeof nativeEvent.azimuthAngle === 'number' ? nativeEvent.azimuthAngle : 0.0
-    const altitude = typeof nativeEvent.altitudeAngle === 'number' ? nativeEvent.altitudeAngle : 0.0
+    // Pressure: use the native value when the hardware supports it (> 0 and
+    // not the browser default of exactly 0.5 on non-pressure devices).
+    const pressure = (typeof ev.pressure === 'number' && ev.pressure > 0)
+      ? ev.pressure
+      : 0.5
 
     return {
-      t: nativeEvent.timeStamp, 
-      x: point.x,
-      y: point.y,
-      p: pressure,
-      az: azimuth,
-      alt: altitude,
-      id: currentStrokeId,
+      t:   ev.timeStamp,                              // per-event high-res timestamp
+      x:   point.x,
+      y:   point.y,
+      p:   pressure,
+      az:  (ev as PointerEvent & { azimuthAngle?: number }).azimuthAngle  ?? 0.0,
+      alt: (ev as PointerEvent & { altitudeAngle?: number }).altitudeAngle ?? 0.0,
+      id:  currentStrokeId,
     }
   }
 
@@ -151,28 +178,66 @@ export function CanvasScreen() {
     setHasDrawn(true)
     setSubmitError(null)
     lastPointRef.current = point
-    strokesRef.current.push(extractStrokePoint(e, point, strokeIdRef.current))
+    strokesRef.current.push(buildStrokePoint(e.nativeEvent as PointerEvent, point, strokeIdRef.current))
   }
 
+  // ---------------------------------------------------------------------------
+  // Fix (audit §1 — coalesced events):
+  //
+  // Browsers batch pointermove events between animation frames.  On a 240 Hz
+  // stylus the device may sample at 240 Hz but the browser only delivers one
+  // event per 60 Hz frame.  The intermediate samples are stored as "coalesced
+  // events" accessible via getCoalescedEvents().
+  //
+  // Problem without this fix:
+  //   • Every point in a fast stroke gets the SAME timeStamp (one per frame).
+  //   • np.diff(timestamps) → arrays of zeros → adaptive window falls back to 11.
+  //   • K4 T_ink is underestimated → %ThinkTime is inflated → false K4 positives.
+  //
+  // Fix:
+  //   • Iterate getCoalescedEvents() for data capture (accurate timestamps).
+  //   • Use only the primary event for drawing (avoids double-painting artefacts).
+  // ---------------------------------------------------------------------------
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
-    const point = getCoordinates(e)
-    if (!point || !lastPointRef.current) return
+    const canvas = canvasRef.current
+    if (!canvas) return
     const ctx = getContext()
     if (!ctx) return
-    ctx.beginPath()
-    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y)
-    ctx.lineTo(point.x, point.y)
-    ctx.stroke()
-    lastPointRef.current = point
-    strokesRef.current.push(extractStrokePoint(e, point, strokeIdRef.current))
+
+    // --- Data capture: use every coalesced sample for kinematic accuracy ---
+    const nativeEvent  = e.nativeEvent as PointerEvent
+    const coalescedEvents: PointerEvent[] =
+      typeof nativeEvent.getCoalescedEvents === 'function'
+        ? nativeEvent.getCoalescedEvents()
+        : [nativeEvent]
+
+    // Fallback: if getCoalescedEvents returns an empty array, use the primary event
+    const eventsToCapture = coalescedEvents.length > 0 ? coalescedEvents : [nativeEvent]
+
+    eventsToCapture.forEach(ev => {
+      const point = getCoordinatesFromNative(ev, canvas)
+      if (!point) return
+      // Each coalesced event has its own timeStamp — this is the key fix
+      strokesRef.current.push(buildStrokePoint(ev, point, strokeIdRef.current))
+    })
+
+    // --- Rendering: use only the primary (last) event position to draw ---
+    const primaryPoint = getCoordinates(e)
+    if (primaryPoint && lastPointRef.current) {
+      ctx.beginPath()
+      ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y)
+      ctx.lineTo(primaryPoint.x, primaryPoint.y)
+      ctx.stroke()
+      lastPointRef.current = primaryPoint
+    }
   }
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
     const point = getCoordinates(e)
     if (point) {
-      strokesRef.current.push(extractStrokePoint(e, point, strokeIdRef.current))
+      strokesRef.current.push(buildStrokePoint(e.nativeEvent as PointerEvent, point, strokeIdRef.current))
     }
     setIsDrawing(false)
     lastPointRef.current = null
@@ -193,61 +258,66 @@ export function CanvasScreen() {
   // Submit: send payload to backend (UPDATED FOR DIRECT INTEGER PARSING)
   // ---------------------------------------------------------------------------
   const handleSubmit = async () => {
-    if (!hasDrawn || isSubmitting) return
+  if (!hasDrawn || isSubmitting) return;
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+  setIsSubmitting(true);
+  setSubmitError(null);
 
-    // Capture Image & DPI
-    const canvas = canvasRef.current;
-    const imageB64 = canvas ? canvas.toDataURL('image/png') : "";
-    const currentDpi = (window.devicePixelRatio || 1) * 96;
+  // --- FIX: Switch to loading screen immediately to prevent UI freeze ---
+  setCurrentScreen('loading');
 
-    // DATA MAPPING: Since the dropdown value is already a number string (e.g. "6", "12")
-    // We simply parse it into a clean integer for the backend.
-    const payload = {
-      strokes: strokesRef.current,
-      image_b64: imageB64,
-      patient_age: age ? parseInt(age as string, 10) : 0, 
-      education_years: education ? parseInt(education as string, 10) : 0,
-      device_dpi: currentDpi
-    };
+  const canvas = canvasRef.current;
+  const imageB64 = canvas ? canvas.toDataURL('image/png') : "";
+  const currentDpi = (window.devicePixelRatio || 1) * 96;
 
-    try {
-      // Endpoint updated to /analyze
-      const response = await fetch(`${BACKEND_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+  const payload = {
+    strokes: strokesRef.current,
+    image_b64: imageB64,
+    patient_age: age ? parseInt(age as string, 10) : 0, 
+    education_years: education ? parseInt(education as string, 10) : 0,
+    device_dpi: currentDpi
+  };
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Backend error ${response.status}: ${errorText}`)
-      }
+  try {
+    const response = await fetch(`${BACKEND_URL}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      const result = await response.json()
-
-      if (setAnalysisData) {
-        setAnalysisData(result)
-      }
-
-      if (typeof result?.result_index === 'number') {
-        setResultIndex(result.result_index)
-      }
-
-      strokesRef.current = []
-      strokeIdRef.current = 0
-
-      setCurrentScreen('loading')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      console.error('❌ [dCDT] Submission failed:', message)
-      setSubmitError(message)
-    } finally {
-      setIsSubmitting(false)
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend error ${response.status}: ${errorText}`);
     }
+
+    const result = await response.json();
+
+    // Store real analysis data into global context
+    if (setAnalysisData) {
+      setAnalysisData(result);
+    }
+
+    if (typeof result?.result_index === 'number') {
+      setResultIndex(result.result_index);
+    }
+
+    // Clear local stroke buffer after successful submission
+    strokesRef.current = [];
+    strokeIdRef.current = 0;
+
+    // NOTE: Navigation to 'report' is now handled by LoadingScreen
+    // once analysisData is detected in the context.
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('❌ [dCDT] Submission failed:', message);
+    setSubmitError(message);
+    
+    // Return to canvas if an error occurs so the user can see the error message
+    setCurrentScreen('canvas'); 
+  } finally {
+    setIsSubmitting(false);
   }
+}
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-full max-w-7xl mx-auto p-4 md:p-6 gap-4 overflow-y-auto lg:overflow-hidden bg-slate-50">
