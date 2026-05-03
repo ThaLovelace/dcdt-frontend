@@ -9,6 +9,14 @@ import {
 
 interface Point { x: number; y: number }
 
+// Global interaction restriction styles applied to the entire component.
+// Prevents accidental text selection, long-press menus, and copy triggers for senior users.
+const NO_SELECT_STYLE: React.CSSProperties = {
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
+  WebkitTouchCallout: 'none',
+}
+
 export function PracticeScreen() {
   const { setCurrentScreen, t, age, setAge, education, setEducation } = useApp()
 
@@ -66,34 +74,73 @@ export function PracticeScreen() {
     setHasDrawn(false)
   }, [])
 
-  const getPos = (e: React.TouchEvent | React.MouseEvent): Point => {
-    const canvas = canvasRef.current
-    if (!canvas) return { x: 0, y: 0 }
+  // ── [FIX 3] Pointer Events drawing handlers ────────────────────────────────
+  // Migrated from Touch/Mouse events to Pointer Events so that pointerType can be
+  // inspected, enabling correct stylus-only / palm rejection behavior.
+
+  const getCoordinatesFromNative = (ev: PointerEvent, canvas: HTMLCanvasElement): Point | null => {
+    // Block finger touch when stylusOnly is enabled — this is the core palm rejection gate.
+    if (stylusOnly && ev.pointerType === 'touch') return null
     const rect = canvas.getBoundingClientRect()
-    if ('touches' in e) {
-      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }
-    }
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    const dpr = window.devicePixelRatio || 1
+    const scaleX = canvas.width / rect.width / dpr
+    const scaleY = canvas.height / rect.height / dpr
+    return { x: (ev.clientX - rect.left) * scaleX, y: (ev.clientY - rect.top) * scaleY }
   }
 
-  const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault(); setIsDrawing(true); setHasDrawn(true); lastPosRef.current = getPos(e)
+  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point | null => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    return getCoordinatesFromNative(e.nativeEvent as PointerEvent, canvas)
   }
 
-  const draw = (e: React.TouchEvent | React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const point = getCoordinates(e)
+    if (!point) return
+    setIsDrawing(true)
+    setHasDrawn(true)
+    lastPosRef.current = point
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
-    e.preventDefault()
-    const ctx = canvasRef.current?.getContext('2d')
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const pos = getPos(e)
-    ctx.beginPath()
-    ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
-    ctx.lineTo(pos.x, pos.y)
-    ctx.stroke()
-    lastPosRef.current = pos
+
+    // Use coalesced events for smoother strokes at high sample rates (Apple Pencil, etc.)
+    const nativeEvent = e.nativeEvent as PointerEvent
+    const coalescedEvents: PointerEvent[] = typeof nativeEvent.getCoalescedEvents === 'function'
+      ? nativeEvent.getCoalescedEvents() : [nativeEvent]
+    const eventsToProcess = coalescedEvents.length > 0 ? coalescedEvents : [nativeEvent]
+
+    eventsToProcess.forEach((ev) => {
+      const point = getCoordinatesFromNative(ev, canvas)
+      if (!point) return
+      ctx.strokeStyle = '#1a1a1a'
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.beginPath()
+      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
+      ctx.lineTo(point.x, point.y)
+      ctx.stroke()
+      lastPosRef.current = point
+    })
   }
 
-  const stopDrawing = () => setIsDrawing(false)
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return
+    // Capture final point if valid (respects stylusOnly check)
+    const point = getCoordinates(e)
+    if (point) lastPosRef.current = point
+    setIsDrawing(false)
+  }
+
+  const handlePointerLeave = () => { setIsDrawing(false) }
+
+  // ── Business logic (unchanged) ─────────────────────────────────────────────
 
   const handleStartRealTest = () => {
     if (age && education) { setIsModalOpen(false); setShowTimerWarning(true) }
@@ -101,7 +148,7 @@ export function PracticeScreen() {
 
   const handleClearConfirm = () => { clearCanvas(); setShowClearModal(false) }
 
-  // ── Sub-components ────────────────────────────────────────────────────────
+  // ── Sub-components ─────────────────────────────────────────────────────────
 
   const Toggle = ({ checked, onToggle, label, colorOn }: {
     checked: boolean; onToggle: () => void; label: string; colorOn: string
@@ -179,11 +226,17 @@ export function PracticeScreen() {
   )
 
   return (
-    <div className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden">
+    // [FIX 4] NO_SELECT_STYLE applied at root level: disables text selection, long-press
+    // menus, and copy gestures across the entire screen to prevent accidental triggers.
+    <div
+      className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden"
+      style={NO_SELECT_STYLE}
+    >
 
       {/* Mobile instruction bar */}
-      <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-emerald-50 text-emerald-500">
+      {/* [FIX 1] Reduced py-3 → py-2 to cut vertical gap on mobile */}
+      <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-emerald-50 text-emerald-500">
           <PenLine className="w-5 h-5" />
         </div>
         <div className="min-w-0 flex-1">
@@ -197,15 +250,17 @@ export function PracticeScreen() {
       </div>
 
       {/* Main area */}
-      <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-6">
+      {/* [FIX 1] Reduced desktop padding: lg:p-6 → lg:p-3 to bring content closer to the top */}
+      <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-3">
         <div className={`flex-1 min-h-0 flex flex-col lg:flex-row lg:flex-none lg:items-stretch lg:gap-5 ${isLeftHanded ? 'lg:flex-row-reverse' : ''}`}>
 
           {/* Desktop sidebar */}
-          <div className="hidden lg:flex flex-col justify-between min-w-[320px] w-[320px] xl:w-[360px] shrink-0 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div className="flex flex-col gap-5">
+          {/* [FIX 2] Width and padding reduced to give maximum space to the canvas */}
+          <div className="hidden lg:flex flex-col justify-between min-w-[280px] w-[280px] xl:w-[320px] shrink-0 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-500 shrink-0">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-500 shrink-0">
                     <PenLine className="w-5 h-5" />
                   </div>
                   <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-wider whitespace-nowrap">
@@ -213,7 +268,7 @@ export function PracticeScreen() {
                   </span>
                 </div>
                 <span className="text-[10px] font-black tracking-[0.1em] uppercase text-slate-400 mb-1">Practice Mode</span>
-                <h1 className="text-[1rem] xl:text-lg font-bold text-gray-900 leading-snug mb-1">{t('practiceTitle')}</h1>
+                <h1 className="text-[0.9375rem] xl:text-[1rem] font-bold text-gray-900 leading-snug mb-1">{t('practiceTitle')}</h1>
                 <p className="text-xs text-gray-400 leading-relaxed">{t('practiceSubtitle')}</p>
               </div>
               <div className="flex flex-col gap-2">
@@ -225,18 +280,27 @@ export function PracticeScreen() {
           </div>
 
           {/* Canvas wrapper */}
+          {/* [FIX 2] max-h changed from hardcoded 540px → 80vh for dynamic tablet/iPad sizing.
+               aspect-square enforces strict 1:1 square; sidebar height expands to match. */}
           <div className="flex-1 min-h-0 flex items-center justify-center lg:flex-none lg:h-full">
             <div
               className="relative bg-white overflow-hidden w-full h-full
-                         lg:w-auto lg:h-full lg:max-h-[540px] lg:aspect-square
-                         lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none select-none"
-              style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+                         lg:w-auto lg:h-full lg:max-h-[80vh] lg:aspect-square
+                         lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none"
+              // [FIX 4] Canvas wrapper gets full interaction lock too
+              style={NO_SELECT_STYLE}
             >
               <canvas
-                ref={canvasRef} className="w-full h-full cursor-crosshair touch-none block"
-                onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
-                aria-label="Practice drawing canvas" role="img"
+                ref={canvasRef}
+                className="w-full h-full cursor-crosshair touch-none block"
+                // [FIX 3] Replaced onMouseDown/onTouchStart with Pointer Events exclusively.
+                // This allows pointerType inspection for correct palm rejection behavior.
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerLeave}
+                aria-label="Practice drawing canvas"
+                role="img"
               />
               {!hasDrawn && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">

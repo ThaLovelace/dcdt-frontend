@@ -11,6 +11,14 @@ interface Point { x: number; y: number }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
+// Global interaction restriction styles applied to the entire component
+// Prevents accidental text selection, long-press menus, and copy triggers for senior users
+const NO_SELECT_STYLE: React.CSSProperties = {
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
+  WebkitTouchCallout: 'none',
+}
+
 export function CanvasScreen() {
   const { t, setCurrentScreen, incrementRestartCount, setResultIndex, setAnalysisData, age, education } = useApp()
 
@@ -85,6 +93,7 @@ export function CanvasScreen() {
   }, [])
 
   const getCoordinatesFromNative = (ev: PointerEvent, canvas: HTMLCanvasElement): Point | null => {
+    // Stylus-only / palm rejection: block finger touch when stylusOnly is enabled
     if (stylusOnly && ev.pointerType === 'touch') return null
     const rect = canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
@@ -176,26 +185,20 @@ export function CanvasScreen() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Backend error ${response.status}: ${errorText}`)
-      }
-      const result = await response.json()
-      if (setAnalysisData) setAnalysisData(result)
-      if (typeof result?.result_index === 'number') setResultIndex(result.result_index)
-      strokesRef.current = []
-      strokeIdRef.current = 0
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
+      const data = await response.json()
+      setResultIndex(data.result_index ?? 0)
+      setAnalysisData(data)
+      setCurrentScreen('result')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      console.error('❌ [dCDT] Submission failed:', message)
-      setSubmitError(message)
+      setSubmitError(err instanceof Error ? err.message : 'Submission failed')
       setCurrentScreen('canvas')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // ── Sub-components ────────────────────────────────────────────────────────
+  // ── Sub-components ───────────────────────────────────────────────────────────
 
   const Toggle = ({ checked, onToggle, label, colorOn }: {
     checked: boolean; onToggle: () => void; label: string; colorOn: string
@@ -283,30 +286,39 @@ export function CanvasScreen() {
   )
 
   return (
-    <div className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden">
+    // [FIX 4] NO_SELECT_STYLE applied at root level: disables text selection, long-press
+    // menus, and copy gestures across the entire screen to prevent accidental triggers.
+    <div
+      className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden"
+      style={NO_SELECT_STYLE}
+    >
 
       {/* ROW 1 — Mobile instruction bar */}
-      <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-blue-50 text-blue-500">
+      <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        {/* [FIX 1] Reduced py-3 → py-2 to cut vertical gap on mobile instruction bar */}
+        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-blue-50 text-blue-500">
           <Clock className="w-5 h-5" />
         </div>
         <p className="text-[0.9375rem] font-bold text-gray-900 leading-snug">{t('canvasInstruction')}</p>
       </div>
 
       {/* Main area */}
-      <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-6">
+      {/* [FIX 1] Reduced desktop padding: lg:p-6 → lg:p-3 to bring content closer to the top */}
+      <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-3">
         <div className={`flex-1 min-h-0 flex flex-col lg:flex-row lg:flex-none lg:items-stretch lg:gap-5 ${isLeftHanded ? 'lg:flex-row-reverse' : ''}`}>
 
           {/* Desktop sidebar */}
-          <div className="hidden lg:flex flex-col justify-between min-w-[320px] w-[320px] xl:w-[360px] shrink-0 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div className="flex flex-col gap-5">
+          {/* [FIX 2] Sidebar height is now driven by the canvas aspect ratio container,
+               padding reduced to p-4 to keep internal spacing balanced with larger canvas */}
+          <div className="hidden lg:flex flex-col justify-between min-w-[280px] w-[280px] xl:w-[320px] shrink-0 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-blue-50 text-blue-500">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-blue-50 text-blue-500">
                   <Clock className="w-5 h-5" />
                 </div>
                 {/* Eyebrow */}
                 <span className="text-[10px] font-black tracking-[0.1em] uppercase text-slate-400 mb-1">Instructions</span>
-                <h1 className="text-[1rem] xl:text-lg font-bold text-gray-900 leading-snug">{t('canvasInstruction')}</h1>
+                <h1 className="text-[0.9375rem] xl:text-[1rem] font-bold text-gray-900 leading-snug">{t('canvasInstruction')}</h1>
               </div>
               <div className="flex flex-col gap-2">
                 <StylusToggleRow />
@@ -322,19 +334,27 @@ export function CanvasScreen() {
           </div>
 
           {/* Canvas wrapper */}
+          {/* [FIX 2] max-h changed from hardcoded 540px → 80vh for dynamic tablet/iPad sizing.
+               aspect-square maintains strict 1:1 ratio; w-auto lets height drive the square. */}
           <div className="flex-1 min-h-0 flex items-center justify-center lg:flex-none lg:h-full">
             <div
               className="relative bg-white overflow-hidden w-full h-full
-                         lg:w-auto lg:h-full lg:max-h-[540px] lg:aspect-square
-                         lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none select-none"
-              style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+                         lg:w-auto lg:h-full lg:max-h-[80vh] lg:aspect-square
+                         lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none"
+              // [FIX 4] Canvas wrapper also gets full interaction lock
+              style={NO_SELECT_STYLE}
             >
               <canvas
                 ref={canvasRef}
                 className="w-full h-full cursor-crosshair touch-none block"
-                onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp} onPointerLeave={handlePointerLeave}
-                aria-label="Drawing canvas for the Clock Drawing Test" role="img"
+                // [FIX 3] Pointer Events used exclusively — correctly distinguishes
+                // pointerType === 'pen' vs 'touch', enabling reliable stylus-only / palm rejection
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerLeave}
+                aria-label="Drawing canvas for the Clock Drawing Test"
+                role="img"
               />
               {!hasDrawn && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
