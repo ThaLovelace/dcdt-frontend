@@ -185,13 +185,19 @@ export function CanvasScreen() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!response.ok) throw new Error(`Server error: ${response.status}`)
-      const data = await response.json()
-      setResultIndex(data.result_index ?? 0)
-      setAnalysisData(data)
-      setCurrentScreen('result')
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Backend error ${response.status}: ${errorText}`)
+      }
+      const result = await response.json()
+      if (setAnalysisData) setAnalysisData(result)
+      if (typeof result?.result_index === 'number') setResultIndex(result.result_index)
+      strokesRef.current = []
+      strokeIdRef.current = 0
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Submission failed')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      console.error('❌ [dCDT] Submission failed:', message)
+      setSubmitError(message)
       setCurrentScreen('canvas')
     } finally {
       setIsSubmitting(false)
