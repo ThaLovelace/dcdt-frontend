@@ -2,48 +2,27 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { useApp } from '@/lib/app-context'
-import { RotateCcw, Send, Pen, Clock } from 'lucide-react'
+import { RotateCcw, Send, Pen, Clock, ArrowLeftRight } from 'lucide-react'
 
-// ---------------------------------------------------------------------------
-// Table 3.1 compliant data point schema
-// ---------------------------------------------------------------------------
 interface StrokePoint {
-  t: number     
-  x: number     
-  y: number     
-  p: number     
-  az: number    
-  alt: number   
-  id: number    
+  t: number; x: number; y: number; p: number; az: number; alt: number; id: number
 }
-
-interface Point {
-  x: number
-  y: number
-}
+interface Point { x: number; y: number }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
 export function CanvasScreen() {
-  const { 
-    t, 
-    setCurrentScreen, 
-    incrementRestartCount, 
-    setResultIndex, 
-    setAnalysisData,
-    age,
-    education
-  } = useApp()
-  
+  const { t, setCurrentScreen, incrementRestartCount, setResultIndex, setAnalysisData, age, education } = useApp()
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [stylusOnly, setStylusOnly] = useState(true)
+  const [isLeftHanded, setIsLeftHanded] = useState(false)
   const [showRestartModal, setShowRestartModal] = useState(false)
   const [hasDrawn, setHasDrawn] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const lastPointRef = useRef<Point | null>(null)
-
   const strokesRef = useRef<StrokePoint[]>([])
   const strokeIdRef = useRef<number>(0)
 
@@ -67,13 +46,8 @@ export function CanvasScreen() {
 
   useEffect(() => {
     initCanvas()
-    const observer = new ResizeObserver(() => {
-      if (hasDrawn) return
-      initCanvas()
-    })
-    if (canvasRef.current?.parentElement) {
-      observer.observe(canvasRef.current.parentElement)
-    }
+    const observer = new ResizeObserver(() => { if (hasDrawn) return; initCanvas() })
+    if (canvasRef.current?.parentElement) observer.observe(canvasRef.current.parentElement)
     return () => observer.disconnect()
   }, [initCanvas, hasDrawn])
 
@@ -94,7 +68,6 @@ export function CanvasScreen() {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     setHasDrawn(false)
-    
     strokesRef.current = []
     strokeIdRef.current = 0
   }, [])
@@ -111,62 +84,28 @@ export function CanvasScreen() {
     return ctx
   }, [])
 
-  // ---------------------------------------------------------------------------
-  // Coordinate helper — works with both React synthetic events and raw
-  // PointerEvent objects (needed for getCoalescedEvents).
-  //
-  // Fix (audit §1): applies CSS-scale correction so that coordinates are
-  // accurate even when the canvas element is scaled by a responsive layout.
-  //   scaleX = canvas backing-store width  / CSS display width  / DPR
-  //   scaleY = canvas backing-store height / CSS display height / DPR
-  // Without this, K1 RMS and K2 velocity are off by the CSS scale factor.
-  // ---------------------------------------------------------------------------
-  const getCoordinatesFromNative = (
-    ev: PointerEvent,
-    canvas: HTMLCanvasElement
-  ): Point | null => {
+  const getCoordinatesFromNative = (ev: PointerEvent, canvas: HTMLCanvasElement): Point | null => {
     if (stylusOnly && ev.pointerType === 'touch') return null
-    const rect   = canvas.getBoundingClientRect()
-    const dpr    = window.devicePixelRatio || 1
-    const scaleX = canvas.width  / rect.width  / dpr
+    const rect = canvas.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    const scaleX = canvas.width / rect.width / dpr
     const scaleY = canvas.height / rect.height / dpr
-    return {
-      x: (ev.clientX - rect.left) * scaleX,
-      y: (ev.clientY - rect.top)  * scaleY,
-    }
+    return { x: (ev.clientX - rect.left) * scaleX, y: (ev.clientY - rect.top) * scaleY }
   }
 
-  // Thin wrapper for React synthetic events (pointerdown / pointerup)
   const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point | null => {
     const canvas = canvasRef.current
     if (!canvas) return null
     return getCoordinatesFromNative(e.nativeEvent as PointerEvent, canvas)
   }
 
-  // ---------------------------------------------------------------------------
-  // Build a single StrokePoint from a raw PointerEvent + pre-computed canvas
-  // coordinates.  Accepting a raw PointerEvent (instead of a React synthetic
-  // event) lets us call this function on coalesced events too.
-  // ---------------------------------------------------------------------------
-  const buildStrokePoint = (
-    ev:             PointerEvent,
-    point:          Point,
-    currentStrokeId: number
-  ): StrokePoint => {
-    // Pressure: use the native value when the hardware supports it (> 0 and
-    // not the browser default of exactly 0.5 on non-pressure devices).
-    const pressure = (typeof ev.pressure === 'number' && ev.pressure > 0)
-      ? ev.pressure
-      : 0.5
-
+  const buildStrokePoint = (ev: PointerEvent, point: Point, currentStrokeId: number): StrokePoint => {
+    const pressure = typeof ev.pressure === 'number' && ev.pressure > 0 ? ev.pressure : 0.5
     return {
-      t:   ev.timeStamp,                              // per-event high-res timestamp
-      x:   point.x,
-      y:   point.y,
-      p:   pressure,
-      az:  (ev as PointerEvent & { azimuthAngle?: number }).azimuthAngle  ?? 0.0,
+      t: ev.timeStamp, x: point.x, y: point.y, p: pressure,
+      az: (ev as PointerEvent & { azimuthAngle?: number }).azimuthAngle ?? 0.0,
       alt: (ev as PointerEvent & { altitudeAngle?: number }).altitudeAngle ?? 0.0,
-      id:  currentStrokeId,
+      id: currentStrokeId,
     }
   }
 
@@ -181,48 +120,21 @@ export function CanvasScreen() {
     strokesRef.current.push(buildStrokePoint(e.nativeEvent as PointerEvent, point, strokeIdRef.current))
   }
 
-  // ---------------------------------------------------------------------------
-  // Fix (audit §1 — coalesced events):
-  //
-  // Browsers batch pointermove events between animation frames.  On a 240 Hz
-  // stylus the device may sample at 240 Hz but the browser only delivers one
-  // event per 60 Hz frame.  The intermediate samples are stored as "coalesced
-  // events" accessible via getCoalescedEvents().
-  //
-  // Problem without this fix:
-  //   • Every point in a fast stroke gets the SAME timeStamp (one per frame).
-  //   • np.diff(timestamps) → arrays of zeros → adaptive window falls back to 11.
-  //   • K4 T_ink is underestimated → %ThinkTime is inflated → false K4 positives.
-  //
-  // Fix:
-  //   • Iterate getCoalescedEvents() for data capture (accurate timestamps).
-  //   • Use only the primary event for drawing (avoids double-painting artefacts).
-  // ---------------------------------------------------------------------------
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = getContext()
     if (!ctx) return
-
-    // --- Data capture: use every coalesced sample for kinematic accuracy ---
-    const nativeEvent  = e.nativeEvent as PointerEvent
-    const coalescedEvents: PointerEvent[] =
-      typeof nativeEvent.getCoalescedEvents === 'function'
-        ? nativeEvent.getCoalescedEvents()
-        : [nativeEvent]
-
-    // Fallback: if getCoalescedEvents returns an empty array, use the primary event
+    const nativeEvent = e.nativeEvent as PointerEvent
+    const coalescedEvents: PointerEvent[] = typeof nativeEvent.getCoalescedEvents === 'function'
+      ? nativeEvent.getCoalescedEvents() : [nativeEvent]
     const eventsToCapture = coalescedEvents.length > 0 ? coalescedEvents : [nativeEvent]
-
-    eventsToCapture.forEach(ev => {
+    eventsToCapture.forEach((ev) => {
       const point = getCoordinatesFromNative(ev, canvas)
       if (!point) return
-      // Each coalesced event has its own timeStamp — this is the key fix
       strokesRef.current.push(buildStrokePoint(ev, point, strokeIdRef.current))
     })
-
-    // --- Rendering: use only the primary (last) event position to draw ---
     const primaryPoint = getCoordinates(e)
     if (primaryPoint && lastPointRef.current) {
       ctx.beginPath()
@@ -236,185 +148,223 @@ export function CanvasScreen() {
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
     const point = getCoordinates(e)
-    if (point) {
-      strokesRef.current.push(buildStrokePoint(e.nativeEvent as PointerEvent, point, strokeIdRef.current))
-    }
+    if (point) strokesRef.current.push(buildStrokePoint(e.nativeEvent as PointerEvent, point, strokeIdRef.current))
     setIsDrawing(false)
     lastPointRef.current = null
   }
 
-  const handlePointerLeave = () => {
-    setIsDrawing(false)
-    lastPointRef.current = null
-  }
+  const handlePointerLeave = () => { setIsDrawing(false); lastPointRef.current = null }
 
-  const handleRestartConfirm = () => {
-    incrementRestartCount()
-    clearCanvas()
-    setShowRestartModal(false)
-  }
+  const handleRestartConfirm = () => { incrementRestartCount(); clearCanvas(); setShowRestartModal(false) }
 
-  // ---------------------------------------------------------------------------
-  // Submit: send payload to backend (UPDATED FOR DIRECT INTEGER PARSING)
-  // ---------------------------------------------------------------------------
   const handleSubmit = async () => {
-  if (!hasDrawn || isSubmitting) return;
-
-  setIsSubmitting(true);
-  setSubmitError(null);
-
-  // --- FIX: Switch to loading screen immediately to prevent UI freeze ---
-  setCurrentScreen('loading');
-
-  const canvas = canvasRef.current;
-  const imageB64 = canvas ? canvas.toDataURL('image/png') : "";
-  const currentDpi = (window.devicePixelRatio || 1) * 96;
-
-  const payload = {
-    strokes: strokesRef.current,
-    image_b64: imageB64,
-    patient_age: age ? parseInt(age as string, 10) : 0, 
-    education_years: education ? parseInt(education as string, 10) : 0,
-    device_dpi: currentDpi
-  };
-
-  try {
-    const response = await fetch(`${BACKEND_URL}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Backend error ${response.status}: ${errorText}`);
+    if (!hasDrawn || isSubmitting) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    setCurrentScreen('loading')
+    const canvas = canvasRef.current
+    const imageB64 = canvas ? canvas.toDataURL('image/png') : ''
+    const currentDpi = (window.devicePixelRatio || 1) * 96
+    const payload = {
+      strokes: strokesRef.current, image_b64: imageB64,
+      patient_age: age ? parseInt(age as string, 10) : 0,
+      education_years: education ? parseInt(education as string, 10) : 0,
+      device_dpi: currentDpi,
     }
-
-    const result = await response.json();
-
-    // Store real analysis data into global context
-    if (setAnalysisData) {
-      setAnalysisData(result);
+    try {
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Backend error ${response.status}: ${errorText}`)
+      }
+      const result = await response.json()
+      if (setAnalysisData) setAnalysisData(result)
+      if (typeof result?.result_index === 'number') setResultIndex(result.result_index)
+      strokesRef.current = []
+      strokeIdRef.current = 0
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      console.error('❌ [dCDT] Submission failed:', message)
+      setSubmitError(message)
+      setCurrentScreen('canvas')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    if (typeof result?.result_index === 'number') {
-      setResultIndex(result.result_index);
-    }
-
-    // Clear local stroke buffer after successful submission
-    strokesRef.current = [];
-    strokeIdRef.current = 0;
-
-    // NOTE: Navigation to 'report' is now handled by LoadingScreen
-    // once analysisData is detected in the context.
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('❌ [dCDT] Submission failed:', message);
-    setSubmitError(message);
-    
-    // Return to canvas if an error occurs so the user can see the error message
-    setCurrentScreen('canvas'); 
-  } finally {
-    setIsSubmitting(false);
   }
-}
+
+  // ── Sub-components ────────────────────────────────────────────────────────
+
+  const Toggle = ({ checked, onToggle, label, colorOn }: {
+    checked: boolean; onToggle: () => void; label: string; colorOn: string
+  }) => (
+    <button
+      onClick={onToggle} aria-label={label} role="switch" aria-checked={checked}
+      className={`relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+        ${checked ? colorOn : 'bg-slate-300'}
+        ${checked ? 'focus-visible:ring-blue-400' : 'focus-visible:ring-slate-400'}`}
+    >
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md
+        transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-0'}`}
+      />
+    </button>
+  )
+
+  const ToggleRow = ({ icon, iconColor, title, subtitle, checked, onToggle, toggleColor }: {
+    icon: React.ReactNode; iconColor: string; title: string; subtitle: string;
+    checked: boolean; onToggle: () => void; toggleColor: string
+  }) => (
+    <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-200">
+      <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${iconColor}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[0.875rem] font-bold text-gray-900 leading-tight whitespace-nowrap truncate">{title}</p>
+        <p className="text-xs text-gray-400 leading-tight mt-0.5 whitespace-nowrap truncate">{subtitle}</p>
+      </div>
+      <Toggle checked={checked} onToggle={onToggle} label={title} colorOn={toggleColor} />
+    </div>
+  )
+
+  const StylusToggleRow = () => (
+    <ToggleRow
+      icon={<Pen className="w-4 h-4" strokeWidth={2.5} />}
+      iconColor="bg-blue-50 text-blue-500"
+      title={t('stylusMode')} subtitle={t('palmRejection')}
+      checked={stylusOnly} onToggle={() => setStylusOnly(!stylusOnly)} toggleColor="bg-blue-600"
+    />
+  )
+
+  const LeftHandedToggleRow = () => (
+    <ToggleRow
+      icon={<ArrowLeftRight className="w-4 h-4" strokeWidth={2.5} />}
+      iconColor="bg-violet-50 text-violet-500"
+      title={t('leftHandedMode')} subtitle={t('leftHandedDesc')}
+      checked={isLeftHanded} onToggle={() => setIsLeftHanded(!isLeftHanded)} toggleColor="bg-violet-500"
+    />
+  )
+
+  const ActionButtons = ({ stacked }: { stacked: boolean }) => (
+    <div className={`flex gap-2.5 ${stacked ? 'flex-col' : 'flex-row'}`}>
+      <button
+        onClick={() => setShowRestartModal(true)} disabled={isSubmitting}
+        aria-label={t('restartTest')}
+        className={`flex items-center justify-center gap-2
+          h-12 px-4 rounded-xl border-2 border-slate-200 bg-white text-slate-700
+          text-[0.875rem] font-semibold whitespace-nowrap
+          hover:bg-slate-50 active:scale-[0.98] transition-all disabled:opacity-50
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2
+          ${stacked ? 'w-full' : 'flex-1'}`}
+      >
+        <RotateCcw className="w-4 h-4 shrink-0" strokeWidth={2.5} />
+        <span>{t('restartTest')}</span>
+      </button>
+
+      <button
+        onClick={handleSubmit} disabled={!hasDrawn || isSubmitting}
+        aria-label={t('finishSubmit')}
+        className={`flex items-center justify-center gap-2
+          h-12 px-4 rounded-xl text-white text-[0.875rem] font-bold whitespace-nowrap
+          shadow-sm active:scale-[0.98] transition-all
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+          ${hasDrawn && !isSubmitting
+            ? 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-400 shadow-blue-600/20'
+            : 'bg-slate-200 cursor-not-allowed text-slate-400'
+          }
+          ${stacked ? 'w-full' : 'flex-[2]'}`}
+      >
+        <Send className="w-4 h-4 shrink-0" strokeWidth={2.5} />
+        <span>{isSubmitting ? t('loading') : t('finishSubmit')}</span>
+      </button>
+    </div>
+  )
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full max-w-7xl mx-auto p-4 md:p-6 gap-4 overflow-y-auto lg:overflow-hidden bg-slate-50">
+    <div className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden">
 
-      {/* Control Panel (Left / Top) */}
-      <div className="flex flex-col shrink-0 lg:w-80 bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 gap-4">
-        <div>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-blue-50 text-blue-500">
-            <Clock className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900 leading-snug mb-1">
-            {t('canvasInstruction')}
-          </h1>
+      {/* ROW 1 — Mobile instruction bar */}
+      <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-blue-50 text-blue-500">
+          <Clock className="w-5 h-5" />
         </div>
+        <p className="text-[0.9375rem] font-bold text-gray-900 leading-snug">{t('canvasInstruction')}</p>
+      </div>
 
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
-          <div className="flex items-center gap-3">
-            <Pen className="w-5 h-5 text-blue-500" strokeWidth={2.5} />
-            <div>
-              <p className="text-sm font-bold text-gray-900 leading-none mb-1">{t('stylusMode')}</p>
-              <p className="text-xs text-gray-500">{t('palmRejection')}</p>
+      {/* Main area */}
+      <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-6">
+        <div className={`flex-1 min-h-0 flex flex-col lg:flex-row lg:flex-none lg:items-stretch lg:gap-5 ${isLeftHanded ? 'lg:flex-row-reverse' : ''}`}>
+
+          {/* Desktop sidebar */}
+          <div className="hidden lg:flex flex-col justify-between min-w-[320px] w-[320px] xl:w-[360px] shrink-0 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-blue-50 text-blue-500">
+                  <Clock className="w-5 h-5" />
+                </div>
+                {/* Eyebrow */}
+                <span className="text-[10px] font-black tracking-[0.1em] uppercase text-slate-400 mb-1">Instructions</span>
+                <h1 className="text-[1rem] xl:text-lg font-bold text-gray-900 leading-snug">{t('canvasInstruction')}</h1>
+              </div>
+              <div className="flex flex-col gap-2">
+                <StylusToggleRow />
+                <LeftHandedToggleRow />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {submitError && (
+                <p className="text-sm text-red-500 font-medium text-center px-2 leading-snug">{submitError}</p>
+              )}
+              <ActionButtons stacked={true} />
             </div>
           </div>
-          <button
-            onClick={() => setStylusOnly(!stylusOnly)}
-            className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${stylusOnly ? 'bg-blue-500' : 'bg-gray-200'}`}
-            role="switch"
-            aria-checked={stylusOnly}
-            aria-label={t('palmRejection')}
-          >
-            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${stylusOnly ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-        </div>
 
-        {submitError && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-100">
-            <p className="text-xs text-red-600 font-medium break-words">{submitError}</p>
+          {/* Canvas wrapper */}
+          <div className="flex-1 min-h-0 flex items-center justify-center lg:flex-none lg:h-full">
+            <div
+              className="relative bg-white overflow-hidden w-full h-full
+                         lg:w-auto lg:h-full lg:max-h-[540px] lg:aspect-square
+                         lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none select-none"
+              style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+            >
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full cursor-crosshair touch-none block"
+                onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp} onPointerLeave={handlePointerLeave}
+                aria-label="Drawing canvas for the Clock Drawing Test" role="img"
+              />
+              {!hasDrawn && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                  <p className="text-2xl md:text-3xl text-slate-300 font-bold select-none text-center px-6">{t('drawHere')}</p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        <div className="flex-1" />
-
-        <div className="flex flex-col gap-3 mt-4">
-          <button
-            onClick={() => setShowRestartModal(true)}
-            disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 h-12 w-full rounded-2xl border-2 border-gray-100 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors active:scale-[0.98] disabled:opacity-50"
-          >
-            <RotateCcw className="w-4 h-4" strokeWidth={2} />
-            {t('restartTest')}
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={!hasDrawn || isSubmitting}
-            className={`flex items-center justify-center gap-2 h-12 w-full rounded-2xl text-white text-sm font-bold shadow-md transition-all active:scale-[0.98] ${
-              hasDrawn && !isSubmitting
-                ? 'bg-blue-500 hover:bg-blue-600'
-                : 'bg-gray-300 shadow-none text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <Send className="w-4 h-4" strokeWidth={2} />
-            {isSubmitting ? t('loading') : t('finishSubmit')}
-          </button>
         </div>
       </div>
 
-      {/* Canvas Panel (Right / Bottom) */}
-      <div className="flex-1 min-h-[400px] lg:min-h-0 relative bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden mb-4 lg:mb-0">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full cursor-crosshair touch-none"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-        />
-        {!hasDrawn && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-2xl text-gray-300 font-bold select-none text-center px-4">
-              {t('drawHere')}
-            </p>
-          </div>
-        )}
+      {/* Mobile action bar */}
+      <div className="lg:hidden shrink-0 flex flex-col gap-3 px-4 pt-3 pb-5 bg-white border-t border-slate-100 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
+        <StylusToggleRow />
+        {submitError && <p className="text-sm text-red-500 font-medium text-center leading-snug">{submitError}</p>}
+        <ActionButtons stacked={false} />
       </div>
 
-      {/* Restart Modal */}
+      {/* Restart modal */}
       {showRestartModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">{t('restartConfirmTitle')}</h2>
-            <p className="text-sm text-gray-500 mb-8 text-center px-2">{t('restartConfirmMessage')}</p>
-            <div className="flex flex-col gap-3">
-              <button onClick={handleRestartConfirm} className="w-full h-12 bg-red-500 text-white text-base font-bold rounded-xl shadow-md hover:bg-red-600 transition-colors">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-6" role="dialog" aria-modal="true" aria-labelledby="restart-modal-title">
+          <div className="bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h2 id="restart-modal-title" className="text-xl font-black text-gray-900 mb-2 text-center">{t('restartConfirmTitle')}</h2>
+            <p className="text-[0.875rem] text-gray-500 mb-7 text-center px-2 leading-relaxed">{t('restartConfirmMessage')}</p>
+            <div className="flex flex-col gap-2.5">
+              <button onClick={handleRestartConfirm} className="w-full h-12 bg-red-500 text-white text-[0.9375rem] font-bold rounded-xl shadow-sm hover:bg-red-600 active:scale-[0.98] transition-all">
                 {t('confirmRestart')}
               </button>
-              <button onClick={() => setShowRestartModal(false)} className="w-full h-12 bg-white text-gray-600 text-base font-semibold rounded-xl border-2 border-gray-100 hover:bg-gray-50 transition-colors">
+              <button onClick={() => setShowRestartModal(false)} className="w-full h-12 bg-white text-slate-600 text-[0.9375rem] font-semibold rounded-xl border-2 border-slate-200 hover:bg-slate-50 active:scale-[0.98] transition-all">
                 {t('cancel')}
               </button>
             </div>

@@ -5,7 +5,6 @@ import { useApp } from '@/lib/app-context'
 import { Brain } from 'lucide-react'
 
 export function LoadingScreen() {
-  // Access analysisData from context to monitor backend processing status
   const { t, setCurrentScreen, analysisData } = useApp()
   const [step, setStep] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -18,17 +17,14 @@ export function LoadingScreen() {
   ]
 
   useEffect(() => {
-    // Smooth progress bar animation
     const progressInterval = setInterval(() => {
       setProgress(prev => {
-        // If data is still being processed, stall the bar at 95%
-        if (prev >= 95 && !analysisData) return 95;
-        if (prev >= 100) return 100;
-        return prev + 1;
+        if (prev >= 95 && !analysisData) return 95
+        if (prev >= 100) return 100
+        return prev + 1
       })
     }, 100)
 
-    // Cycle through dynamic instruction/status texts
     const stepInterval = setInterval(() => {
       setStep(prev => (prev + 1) % steps.length)
     }, 1500)
@@ -39,48 +35,41 @@ export function LoadingScreen() {
     }
   }, [analysisData, steps.length])
 
-  /**
-   * FIX: Transition logic
-   * Instead of a fixed timeout, we watch for the presence of analysisData.
-   * Once the backend response is stored in the context, we move to the report.
-   */
   useEffect(() => {
     if (analysisData) {
-      // Small visual delay to allow the progress bar to feel complete
       const transitionTimeout = setTimeout(() => {
         setCurrentScreen('report')
       }, 500)
-      
       return () => clearTimeout(transitionTimeout)
     }
   }, [analysisData, setCurrentScreen])
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-slate-50 p-4 md:p-8">
-      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 md:p-12 w-full max-w-md flex flex-col items-center text-center">
-        
-        {/* Animated Brain Icon */}
-        <div className="mb-8 inline-flex">
-          <div className="w-28 h-28 rounded-[2rem] bg-blue-50 flex items-center justify-center shadow-sm animate-pulse">
-            <Brain className="w-14 h-14 text-blue-500" strokeWidth={1.5} />
+    <div className="flex-1 flex items-center justify-center bg-slate-50 p-6">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 md:p-12 w-full max-w-sm flex flex-col items-center text-center">
+
+        {/* Animated icon cluster */}
+        <div className="relative mb-8">
+          <div className="w-24 h-24 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <Brain className="w-12 h-12 text-blue-500" strokeWidth={1.5} />
           </div>
+          {/* Pulsing ring */}
+          <span className="absolute -inset-2 rounded-[1.25rem] border-2 border-blue-200 animate-ping opacity-50" />
         </div>
 
-        {/* Informative Title */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">{t('analyzing')}</h2>
+        <h2 className="text-xl font-black text-gray-900 mb-1 tracking-tight">{t('analyzing')}</h2>
+        <p className="text-[0.8125rem] text-gray-400 mb-8 font-medium">
+          {steps[step]}
+        </p>
 
-        {/* Visual Progress Bar */}
-        <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden mb-6 shadow-inner">
+        {/* Progress bar */}
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
           <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
-
-        {/* Dynamic Status Text */}
-        <p className="text-base md:text-lg text-gray-500 h-7 transition-opacity duration-300 font-medium">
-          {steps[step]}
-        </p>
+        <span className="text-xs font-bold text-gray-400">{progress}%</span>
       </div>
     </div>
   )

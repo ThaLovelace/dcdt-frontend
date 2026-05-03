@@ -13,7 +13,7 @@ import { ReportScreen } from "@/components/dcdt/report-screen"
 function StepIndicator() {
   const { currentScreen, t } = useApp()
 
-  const STEPS: { labelKey: 'stepTutorial'|'stepPractice'|'stepCanvas'|'stepProcess'; screens: Screen[] }[] = [
+  const STEPS: { labelKey: 'stepTutorial' | 'stepPractice' | 'stepCanvas' | 'stepProcess'; screens: Screen[] }[] = [
     { labelKey: 'stepTutorial', screens: ['tutorial'] },
     { labelKey: 'stepPractice', screens: ['practice'] },
     { labelKey: 'stepCanvas',   screens: ['canvas'] },
@@ -21,19 +21,16 @@ function StepIndicator() {
   ]
 
   const activeIndex = STEPS.findIndex(s => s.screens.includes(currentScreen))
-  const ariaValueNow = activeIndex === -1 ? 1 : activeIndex + 1;
+  const ariaValueNow = activeIndex === -1 ? 1 : activeIndex + 1
 
   return (
     <div
-      className="w-full bg-white border-b border-gray-100 px-2 sm:px-4 py-5 shadow-sm z-0 relative"
+      className="w-full bg-white border-b border-slate-200/70 px-4 py-2.5 z-0 relative shadow-[0_1px_4px_rgba(0,0,0,0.04)]"
       role="progressbar"
       aria-label={t('stepProgressLabel')}
       aria-valuenow={ariaValueNow}
-      aria-valuemin={1}
-      aria-valuemax={STEPS.length}
     >
-      {/* เปลี่ยนมาใช้ items-start เพื่อให้วงกลมเริ่มที่ระดับเดียวกันเสมอ */}
-      <ol className="flex items-start justify-center w-full max-w-4xl mx-auto">
+      <ol className="flex items-start justify-center w-full max-w-2xl mx-auto">
         {STEPS.map((step, index) => {
           const isCompleted = index < activeIndex
           const isActive    = index === activeIndex
@@ -41,50 +38,46 @@ function StepIndicator() {
           const isLast      = index === STEPS.length - 1
 
           return (
-            // ปลด flex-1 ออกจากตัวสุดท้าย เพื่อให้ 3 ตัวแรกคำนวณพื้นที่หาร 3 ได้เป๊ะๆ
             <li key={step.labelKey} className={`flex ${isLast ? '' : 'flex-1'}`}>
-              
-              {/* ล็อกความกว้าง w-20 md:w-28 เพื่อป้องกันไม่ให้คำที่ยาว/สั้นมาดึงให้วงกลมเบี้ยว */}
-              <div className="flex flex-col items-center flex-shrink-0 w-20 md:w-28 gap-2.5">
+              <div className="flex flex-col items-center flex-shrink-0 w-14 md:w-20 gap-1">
+                {/* Step circle */}
                 <div
                   className={[
-                    'w-12 h-12 rounded-[1rem] flex items-center justify-center text-lg font-black border-2 transition-colors shadow-sm relative z-10',
-                    isCompleted
-                      ? 'border-blue-500 bg-blue-500 text-white'
-                      : isActive
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 bg-gray-50 text-gray-400',
+                    'w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black border-2 transition-all duration-200 relative z-10',
+                    isCompleted ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                      : isActive  ? 'border-blue-600 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 bg-slate-50 text-slate-400',
                   ].join(' ')}
-                  aria-hidden="true"
                 >
                   {isCompleted ? (
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={3} className="w-3.5 h-3.5">
                       <polyline points="3 8 6.5 12 13 4" />
                     </svg>
                   ) : (
                     index + 1
                   )}
                 </div>
+
+                {/* Label */}
                 <span
                   className={[
-                    'text-xs sm:text-sm md:text-base text-center leading-tight whitespace-nowrap',
-                    isCompleted ? 'text-blue-500 font-bold' : '',
+                    'text-[9px] md:text-[10px] text-center leading-tight whitespace-nowrap font-semibold tracking-wide',
+                    isCompleted ? 'text-blue-500' : '',
                     isActive    ? 'text-blue-600 font-black' : '',
-                    isFuture    ? 'text-gray-400 font-semibold' : '',
+                    isFuture    ? 'text-slate-400' : '',
                   ].join(' ')}
                 >
                   {t(step.labelKey)}
                 </span>
               </div>
-              
-              {/* ดันเส้นลงมา 22px (mt-[22px]) เพื่อให้เสียบเข้าตรงกลางของวงกลมสูง 48px พอดีเป๊ะ */}
+
+              {/* Connector line */}
               {!isLast && (
                 <div
                   className={[
-                    'flex-1 h-1 mx-1 sm:mx-2 rounded-full transition-colors mt-[22px]',
-                    isCompleted ? 'bg-blue-500' : 'bg-gray-100',
+                    'flex-1 h-px mx-1 rounded-full transition-colors mt-4',
+                    isCompleted ? 'bg-blue-500' : 'bg-slate-200',
                   ].join(' ')}
-                  aria-hidden="true"
                 />
               )}
             </li>
@@ -99,11 +92,11 @@ function StepIndicator() {
 
 function ScreenRouter() {
   const { currentScreen } = useApp()
-  if (currentScreen === 'tutorial')    return <TutorialScreen />
-  if (currentScreen === 'practice')    return <PracticeScreen />
-  if (currentScreen === 'canvas')      return <CanvasScreen />
-  if (currentScreen === 'loading')     return <LoadingScreen />
-  if (currentScreen === 'report')      return <ReportScreen />
+  if (currentScreen === 'tutorial') return <TutorialScreen />
+  if (currentScreen === 'practice') return <PracticeScreen />
+  if (currentScreen === 'canvas')   return <CanvasScreen />
+  if (currentScreen === 'loading')  return <LoadingScreen />
+  if (currentScreen === 'report')   return <ReportScreen />
   return <TutorialScreen />
 }
 
@@ -114,7 +107,10 @@ function DCDTApp() {
   const isReport = currentScreen === 'report'
 
   return (
-    <div className={isReport ? 'min-h-full bg-slate-50 flex flex-col' : 'h-full bg-slate-50 flex flex-col'}>
+    <div className={isReport
+      ? 'min-h-full bg-slate-50 flex flex-col'
+      : 'min-h-screen lg:h-full bg-slate-50 flex flex-col'
+    }>
       <AppHeader />
       <StepIndicator />
       <main className={isReport ? 'flex flex-col' : 'flex-1 min-h-0 flex flex-col'}>
