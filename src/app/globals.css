@@ -217,3 +217,17 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* ล็อกทั้งแอปไม่ให้เลือกข้อความหรือขึ้นแว่นขยายบน iPad */
+html, body {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ยกเว้นให้ช่อง Input (ถ้ามี) ยังพิมพ์ได้ปกติ */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

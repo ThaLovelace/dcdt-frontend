@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react'
 import { useApp } from '@/lib/app-context'
 import {
   RotateCcw, ArrowRight, Pen, PenLine, ArrowLeftRight,
@@ -48,12 +48,32 @@ export function PracticeScreen() {
     ctx.lineJoin = 'round'
   }, [])
 
-  useEffect(() => {
+  // [iOS FIX] useLayoutEffect fires synchronously after DOM mutations but before the
+  // browser paints. This means initCanvas() reads the correct final dimensions on
+  // first render, preventing the "broken layout until resize" issue in iPad Safari.
+  useLayoutEffect(() => {
     initCanvas()
-    const observer = new ResizeObserver(() => { if (hasDrawn) return; initCanvas() })
-    if (canvasRef.current?.parentElement) observer.observe(canvasRef.current.parentElement)
+
+    // Observe the canvas element itself (not just parentElement) so ResizeObserver
+    // fires on the first frame when the flex layout settles its final size.
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const observer = new ResizeObserver(() => {
+      // Only reinitialise if the user has not yet drawn — avoids clearing the canvas
+      // on incidental viewport shifts (e.g. soft keyboard appearing).
+      if (hasDrawn) return
+      initCanvas()
+    })
+    observer.observe(canvas)
     return () => observer.disconnect()
   }, [initCanvas, hasDrawn])
+
+  // [iOS FIX] Dispatch a synthetic resize event after mount so Safari recalculates
+  // dynamic viewport units (dvh / -webkit-fill-available) once the toolbar has
+  // settled. Runs once, after paint, so it never blocks the first render.
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, [])
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -226,11 +246,13 @@ export function PracticeScreen() {
   )
 
   return (
-    // [FIX 4] NO_SELECT_STYLE applied at root level: disables text selection, long-press
-    // menus, and copy gestures across the entire screen to prevent accidental triggers.
+    // [iOS FIX] min-h uses both the legacy -webkit-fill-available (set via inline style
+    // for Safari < 15.4) and the modern 100dvh Tailwind class. Together they handle
+    // Safari's dynamic toolbar shrinking/expanding without layout shifts.
+    // NO_SELECT_STYLE also applied here to disable text selection / long-press menus.
     <div
-      className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden"
-      style={NO_SELECT_STYLE}
+      className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden min-h-[100dvh] lg:min-h-0"
+      style={{ ...NO_SELECT_STYLE, minHeight: '-webkit-fill-available' } as React.CSSProperties}
     >
 
       {/* Mobile instruction bar */}
