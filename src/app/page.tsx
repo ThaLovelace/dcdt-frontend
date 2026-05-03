@@ -25,14 +25,15 @@ function StepIndicator() {
 
   return (
     <div
-      className="w-full bg-white border-b border-gray-100 px-4 py-5 shadow-sm z-0 relative"
+      className="w-full bg-white border-b border-gray-100 px-2 sm:px-4 py-5 shadow-sm z-0 relative"
       role="progressbar"
       aria-label={t('stepProgressLabel')}
       aria-valuenow={ariaValueNow}
       aria-valuemin={1}
       aria-valuemax={STEPS.length}
     >
-      <ol className="flex items-center gap-0 w-full max-w-5xl mx-auto px-4">
+      {/* เปลี่ยนมาใช้ items-start เพื่อให้วงกลมเริ่มที่ระดับเดียวกันเสมอ */}
+      <ol className="flex items-start justify-center w-full max-w-4xl mx-auto">
         {STEPS.map((step, index) => {
           const isCompleted = index < activeIndex
           const isActive    = index === activeIndex
@@ -40,11 +41,14 @@ function StepIndicator() {
           const isLast      = index === STEPS.length - 1
 
           return (
-            <li key={step.labelKey} className="flex items-center flex-1 min-w-0">
-              <div className="flex flex-col items-center gap-2.5 flex-shrink-0">
+            // ปลด flex-1 ออกจากตัวสุดท้าย เพื่อให้ 3 ตัวแรกคำนวณพื้นที่หาร 3 ได้เป๊ะๆ
+            <li key={step.labelKey} className={`flex ${isLast ? '' : 'flex-1'}`}>
+              
+              {/* ล็อกความกว้าง w-20 md:w-28 เพื่อป้องกันไม่ให้คำที่ยาว/สั้นมาดึงให้วงกลมเบี้ยว */}
+              <div className="flex flex-col items-center flex-shrink-0 w-20 md:w-28 gap-2.5">
                 <div
                   className={[
-                    'w-12 h-12 rounded-[1rem] flex items-center justify-center text-lg font-black border-2 transition-colors shadow-sm',
+                    'w-12 h-12 rounded-[1rem] flex items-center justify-center text-lg font-black border-2 transition-colors shadow-sm relative z-10',
                     isCompleted
                       ? 'border-blue-500 bg-blue-500 text-white'
                       : isActive
@@ -63,7 +67,7 @@ function StepIndicator() {
                 </div>
                 <span
                   className={[
-                    'text-sm md:text-base text-center leading-tight whitespace-nowrap',
+                    'text-xs sm:text-sm md:text-base text-center leading-tight whitespace-nowrap',
                     isCompleted ? 'text-blue-500 font-bold' : '',
                     isActive    ? 'text-blue-600 font-black' : '',
                     isFuture    ? 'text-gray-400 font-semibold' : '',
@@ -72,10 +76,12 @@ function StepIndicator() {
                   {t(step.labelKey)}
                 </span>
               </div>
+              
+              {/* ดันเส้นลงมา 22px (mt-[22px]) เพื่อให้เสียบเข้าตรงกลางของวงกลมสูง 48px พอดีเป๊ะ */}
               {!isLast && (
                 <div
                   className={[
-                    'flex-1 h-1 mx-3 mb-8 rounded-full transition-colors',
+                    'flex-1 h-1 mx-1 sm:mx-2 rounded-full transition-colors mt-[22px]',
                     isCompleted ? 'bg-blue-500' : 'bg-gray-100',
                   ].join(' ')}
                   aria-hidden="true"

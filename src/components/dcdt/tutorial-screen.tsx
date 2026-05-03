@@ -49,14 +49,14 @@ export function TutorialScreen() {
 
   return (
     /**
-     * Container Logic:
-     * min-h-full with overflow-y-auto enables scrolling ONLY when content exceeds height (1-column).
-     * sm:overflow-hidden locks the screen for desktop (2-columns).
+     * MODERN STICKY FOOTER LAYOUT:
+     * - min-h-[100dvh]: Allows natural, smooth full-page scrolling. No internal scrollbars.
+     * - relative: Needed context for the sticky footer.
      */
-    <div className="flex flex-col w-full min-h-full sm:h-full max-w-5xl mx-auto p-4 md:p-6 overflow-y-auto sm:overflow-hidden bg-slate-50">
+    <div className="flex flex-col w-full min-h-[100dvh] bg-slate-50 relative">
 
-      {/* --- Header Section (Reduced bottom margin) --- */}
-      <div className="flex-none shrink-0 flex flex-col items-center mb-4 md:mb-6 text-center pt-2">
+      {/* --- Header Section --- */}
+      <div className="flex-none flex flex-col items-center pt-6 pb-4 px-4 text-center">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
           {t('tutorialTitle')}
         </h1>
@@ -66,29 +66,25 @@ export function TutorialScreen() {
       </div>
 
       {/* --- Grid Section --- */}
-      <div className="flex-1 w-full flex flex-col justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full h-auto sm:h-full">
+      {/* flex-1 lets it expand naturally. pb-8 gives some breathing room before the footer. */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
           {steps.map((step, i) => (
-            <Card key={i} className="bg-white border-gray-100 shadow-sm rounded-[1.5rem] md:rounded-[2rem] overflow-hidden hover:shadow-md transition-shadow">
-              {/* Reduced padding (py-3 md:py-4) to make boxes less "tall" */}
-              <CardContent className="flex flex-col justify-center h-full py-3 px-4 md:py-4 md:px-6 gap-2">
-                
-                {/* Header Row: Number + Icon + Title (All in one line) */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-blue-500 text-white text-sm font-bold shadow-sm">
+            <Card key={i} className="bg-white border-gray-100 shadow-sm rounded-[1.5rem] md:rounded-[2rem] hover:shadow-md transition-shadow">
+              <CardContent className="flex flex-col justify-center py-5 px-5 md:py-6 md:px-8 gap-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center bg-blue-500 text-white text-base md:text-lg font-bold shadow-sm">
                     {i + 1}
                   </div>
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 text-blue-500">
+                  <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-500">
                     {STEP_ICONS[i]}
                   </div>
-                  {/* Title moved here to the same row */}
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
                     {t(step.titleKey)}
                   </h2>
                 </div>
 
-                {/* Body Text (Stays below the icon row) */}
-                <p className="text-sm text-gray-500 leading-snug pl-[calc(2rem+0.75rem+2.5rem)] md:pl-0">
+                <p className="text-sm md:text-base text-gray-600 leading-relaxed pl-[calc(2.5rem+1rem+3rem)] md:pl-0">
                   {t(step.bodyKey)}
                 </p>
               </CardContent>
@@ -97,11 +93,16 @@ export function TutorialScreen() {
         </div>
       </div>
 
-      {/* --- Footer Section (Reduced top margin) --- */}
-      <div className="flex-none shrink-0 w-full mt-4 md:mt-6 flex justify-center pb-4">
+      {/* --- Footer Section (Sticky Action Bar) --- */}
+      {/* 
+        - sticky bottom-0: Pins the container to the bottom of the viewport.
+        - backdrop-blur-md & bg-slate-50/90: Creates a modern frosted glass effect over the scrolling content.
+        - z-20: Ensures it stays above the grid cards.
+      */}
+      <div className="sticky bottom-0 left-0 w-full flex justify-center p-4 pb-6 md:pb-8 bg-slate-50/90 backdrop-blur-md border-t border-slate-200/60 z-20">
         <button
           onClick={handleStartClick}
-          className="dcdt-btn-lg"
+          className="dcdt-btn-lg shadow-xl hover:-translate-y-0.5 transition-transform"
         >
           {t('tutorialStartButton')}
         </button>
@@ -109,7 +110,7 @@ export function TutorialScreen() {
 
       {/* --- Confirmation Modal --- */}
       {isModalOpen && (
-        <div className="dcdt-modal-overlay">
+        <div className="dcdt-modal-overlay z-50">
           <div className="dcdt-modal-panel">
             <button 
               onClick={() => setIsModalOpen(false)} 
@@ -143,17 +144,25 @@ export function TutorialScreen() {
                 <p className="text-gray-500 mb-6 text-sm">{t('preTestModalDesc')}</p>
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <label htmlFor="age-input" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                       <User className="w-4 h-4 text-blue-500" /> {t('ageLabel')}
                     </label>
-                    <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t('agePlaceholder')} className="dcdt-input" />
+                    <input 
+                      id="age-input"
+                      type="number" 
+                      value={age} 
+                      onChange={(e) => setAge(e.target.value)} 
+                      placeholder={t('agePlaceholder')} 
+                      className="dcdt-input" 
+                    />
                   </div>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <label htmlFor="education-select" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                       <GraduationCap className="w-4 h-4 text-blue-500" /> {t('eduLabel')}
                     </label>
                     <div className="relative">
                       <select
+                        id="education-select"
                         value={education}
                         onChange={(e) => setEducation(e.target.value)}
                         className="w-full h-14 px-4 rounded-xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-base font-medium outline-none appearance-none cursor-pointer"
