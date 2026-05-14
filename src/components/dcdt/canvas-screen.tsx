@@ -20,7 +20,7 @@ const NO_SELECT_STYLE: React.CSSProperties = {
 }
 
 export function CanvasScreen() {
-  const { t, setCurrentScreen, incrementRestartCount, setResultIndex, setAnalysisData, age, education } = useApp()
+  const { t, setCurrentScreen, incrementRestartCount, setResultIndex, setAnalysisData, age, education, setRawStrokes, setOriginalImageB64, setDeviceDPI, startTCT } = useApp()
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
@@ -142,6 +142,7 @@ export function CanvasScreen() {
     const point = getCoordinates(e)
     if (!point) return
     strokeIdRef.current += 1
+    if (!hasDrawn) startTCT()
     setIsDrawing(true)
     setHasDrawn(true)
     setSubmitError(null)
@@ -190,10 +191,13 @@ export function CanvasScreen() {
     if (!hasDrawn || isSubmitting) return
     setIsSubmitting(true)
     setSubmitError(null)
-    setCurrentScreen('loading')
     const canvas = canvasRef.current
     const imageB64 = canvas ? canvas.toDataURL('image/png') : ''
     const currentDpi = (window.devicePixelRatio || 1) * 96
+    setRawStrokes([...strokesRef.current])
+    setOriginalImageB64(imageB64)
+    setDeviceDPI(currentDpi)
+    setCurrentScreen('loading')
     const payload = {
       strokes: strokesRef.current, image_b64: imageB64,
       patient_age: age ? parseInt(age as string, 10) : 0,

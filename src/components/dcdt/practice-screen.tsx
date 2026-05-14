@@ -4,12 +4,11 @@ import { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react
 import { useApp } from '@/lib/app-context'
 import {
   RotateCcw, ArrowRight, Pen, PenLine, ArrowLeftRight,
-  X, AlertTriangle, User, GraduationCap, Clock,
+  X, AlertTriangle, Clock,
 } from 'lucide-react'
 
 interface Point { x: number; y: number }
 
-// Global interaction restriction styles applied to the entire component.
 // Prevents accidental text selection, long-press menus, and copy triggers for senior users.
 const NO_SELECT_STYLE: React.CSSProperties = {
   userSelect: 'none',
@@ -18,17 +17,19 @@ const NO_SELECT_STYLE: React.CSSProperties = {
 }
 
 export function PracticeScreen() {
-  const { setCurrentScreen, t, age, setAge, education, setEducation } = useApp()
+  // Demographic fields (age, education) are NO LONGER used here — they come from the
+  // Dashboard profile guaranteed before reaching this screen.
+  const { setCurrentScreen, t } = useApp()
 
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const lastPosRef = useRef<Point>({ x: 0, y: 0 })
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasDrawn,  setHasDrawn]  = useState(false)
-  const [stylusOnly,   setStylusOnly]   = useState(false)
-  const [isLeftHanded, setIsLeftHanded] = useState(false)
-  const [isModalOpen,       setIsModalOpen]       = useState(false)
-  const [showTimerWarning,  setShowTimerWarning]  = useState(false)
-  const [showClearModal,    setShowClearModal]    = useState(false)
+  const [stylusOnly,    setStylusOnly]    = useState(false)
+  const [isLeftHanded,  setIsLeftHanded]  = useState(false)
+  // "I Am Familiar" now opens the Timer Warning directly — data-collection modal removed.
+  const [showTimerWarning, setShowTimerWarning] = useState(false)
+  const [showClearModal,   setShowClearModal]   = useState(false)
 
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -49,18 +50,13 @@ export function PracticeScreen() {
   }, [])
 
   // [iOS FIX] useLayoutEffect fires synchronously after DOM mutations but before the
-  // browser paints. This means initCanvas() reads the correct final dimensions on
-  // first render, preventing the "broken layout until resize" issue in iPad Safari.
+  // browser paints. Reads correct final dimensions on first render, preventing the
+  // "broken layout until resize" issue in iPad Safari.
   useLayoutEffect(() => {
     initCanvas()
-
-    // Observe the canvas element itself (not just parentElement) so ResizeObserver
-    // fires on the first frame when the flex layout settles its final size.
     const canvas = canvasRef.current
     if (!canvas) return
     const observer = new ResizeObserver(() => {
-      // Only reinitialise if the user has not yet drawn — avoids clearing the canvas
-      // on incidental viewport shifts (e.g. soft keyboard appearing).
       if (hasDrawn) return
       initCanvas()
     })
@@ -68,9 +64,7 @@ export function PracticeScreen() {
     return () => observer.disconnect()
   }, [initCanvas, hasDrawn])
 
-  // [iOS FIX] Dispatch a synthetic resize event after mount so Safari recalculates
-  // dynamic viewport units (dvh / -webkit-fill-available) once the toolbar has
-  // settled. Runs once, after paint, so it never blocks the first render.
+  // [iOS FIX] Dispatch synthetic resize so Safari recalculates dynamic viewport units.
   useEffect(() => {
     window.dispatchEvent(new Event('resize'))
   }, [])
@@ -94,12 +88,9 @@ export function PracticeScreen() {
     setHasDrawn(false)
   }, [])
 
-  // ── [FIX 3] Pointer Events drawing handlers ────────────────────────────────
-  // Migrated from Touch/Mouse events to Pointer Events so that pointerType can be
-  // inspected, enabling correct stylus-only / palm rejection behavior.
+  // ── Pointer Events drawing handlers ───────────────────────────────────────
 
   const getCoordinatesFromNative = (ev: PointerEvent, canvas: HTMLCanvasElement): Point | null => {
-    // Block finger touch when stylusOnly is enabled — this is the core palm rejection gate.
     if (stylusOnly && ev.pointerType === 'touch') return null
     const rect = canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
@@ -129,7 +120,6 @@ export function PracticeScreen() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Use coalesced events for smoother strokes at high sample rates (Apple Pencil, etc.)
     const nativeEvent = e.nativeEvent as PointerEvent
     const coalescedEvents: PointerEvent[] = typeof nativeEvent.getCoalescedEvents === 'function'
       ? nativeEvent.getCoalescedEvents() : [nativeEvent]
@@ -152,7 +142,6 @@ export function PracticeScreen() {
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
-    // Capture final point if valid (respects stylusOnly check)
     const point = getCoordinates(e)
     if (point) lastPosRef.current = point
     setIsDrawing(false)
@@ -160,15 +149,14 @@ export function PracticeScreen() {
 
   const handlePointerLeave = () => { setIsDrawing(false) }
 
-  // ── Business logic (unchanged) ─────────────────────────────────────────────
-
-  const handleStartRealTest = () => {
-    if (age && education) { setIsModalOpen(false); setShowTimerWarning(true) }
+  // ── "I Am Familiar" → Timer Warning directly (no demographic collection) ──
+  const handleIAmFamiliar = () => {
+    setShowTimerWarning(true)
   }
 
   const handleClearConfirm = () => { clearCanvas(); setShowClearModal(false) }
 
-  // ── Sub-components ─────────────────────────────────────────────────────────
+  // ── Sub-components ──────────────────────────────────────────────────────────
 
   const Toggle = ({ checked, onToggle, label, colorOn }: {
     checked: boolean; onToggle: () => void; label: string; colorOn: string
@@ -231,8 +219,9 @@ export function PracticeScreen() {
         <span>{t('clearCanvas')}</span>
       </button>
 
+      {/* "I Am Familiar" directly opens TimerWarning — no demographic modal */}
       <button
-        onClick={() => setIsModalOpen(true)} aria-label={t('iAmFamiliar')}
+        onClick={handleIAmFamiliar} aria-label={t('iAmFamiliar')}
         className={`flex items-center justify-center gap-2 h-12 px-4 rounded-xl
           bg-blue-600 hover:bg-blue-700 text-white text-[0.875rem] font-bold whitespace-nowrap
           shadow-sm shadow-blue-600/20 active:scale-[0.98] transition-all
@@ -246,17 +235,12 @@ export function PracticeScreen() {
   )
 
   return (
-    // [iOS FIX] min-h uses both the legacy -webkit-fill-available (set via inline style
-    // for Safari < 15.4) and the modern 100dvh Tailwind class. Together they handle
-    // Safari's dynamic toolbar shrinking/expanding without layout shifts.
-    // NO_SELECT_STYLE also applied here to disable text selection / long-press menus.
     <div
       className="flex-1 min-h-0 w-full flex flex-col bg-slate-50 overflow-hidden min-h-[100dvh] lg:min-h-0"
       style={{ ...NO_SELECT_STYLE, minHeight: '-webkit-fill-available' } as React.CSSProperties}
     >
 
       {/* Mobile instruction bar */}
-      {/* [FIX 1] Reduced py-3 → py-2 to cut vertical gap on mobile */}
       <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
         <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-emerald-50 text-emerald-500">
           <PenLine className="w-5 h-5" />
@@ -272,12 +256,10 @@ export function PracticeScreen() {
       </div>
 
       {/* Main area */}
-      {/* [FIX 1] Reduced desktop padding: lg:p-6 → lg:p-3 to bring content closer to the top */}
       <div className="flex-1 min-h-0 flex flex-col lg:items-center lg:justify-center lg:p-3">
         <div className={`flex-1 min-h-0 flex flex-col lg:flex-row lg:flex-none lg:items-stretch lg:gap-5 ${isLeftHanded ? 'lg:flex-row-reverse' : ''}`}>
 
           {/* Desktop sidebar */}
-          {/* [FIX 2] Width and padding reduced to give maximum space to the canvas */}
           <div className="hidden lg:flex flex-col justify-between min-w-[280px] w-[280px] xl:w-[320px] shrink-0 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col">
@@ -302,21 +284,16 @@ export function PracticeScreen() {
           </div>
 
           {/* Canvas wrapper */}
-          {/* [FIX 2] max-h changed from hardcoded 540px → 80vh for dynamic tablet/iPad sizing.
-               aspect-square enforces strict 1:1 square; sidebar height expands to match. */}
           <div className="flex-1 min-h-0 flex items-center justify-center lg:flex-none lg:h-full">
             <div
               className="relative bg-white overflow-hidden w-full h-full
                          lg:w-auto lg:h-full lg:max-h-[80vh] lg:aspect-square
                          lg:rounded-2xl lg:border lg:border-slate-200 lg:shadow-md touch-none"
-              // [FIX 4] Canvas wrapper gets full interaction lock too
               style={NO_SELECT_STYLE}
             >
               <canvas
                 ref={canvasRef}
                 className="w-full h-full cursor-crosshair touch-none block"
-                // [FIX 3] Replaced onMouseDown/onTouchStart with Pointer Events exclusively.
-                // This allows pointerType inspection for correct palm rejection behavior.
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
@@ -341,7 +318,7 @@ export function PracticeScreen() {
         <ActionButtons stacked={false} />
       </div>
 
-      {/* Clear confirmation modal */}
+      {/* ── Clear Confirmation Modal ── */}
       {showClearModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-6" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
           <div className="bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -359,85 +336,23 @@ export function PracticeScreen() {
         </div>
       )}
 
-      {/* Data collection modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      {/* ── Warning banner (kept for visual parity but no longer asks for data) ── */}
+      {false && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-            {/* Modal header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
               <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center">
                 <AlertTriangle className="w-8 h-8" />
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors"
-              >
+              <button onClick={() => {}} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors">
                 <X className="w-4 h-4 text-slate-400" />
               </button>
-            </div>
-
-            <div className="px-6 py-5">
-              <h2 id="modal-title" className="text-xl font-black text-gray-900 mb-1">{t('warningRealTestTitle')}</h2>
-              <p className="text-[0.8125rem] text-gray-400 leading-relaxed mb-5">{t('warningRealTestDesc')}</p>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-gray-700 mb-1.5">
-                    <User className="w-3.5 h-3.5 text-blue-500" /> {t('ageLabel')}
-                  </label>
-                  <input
-                    type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t('agePlaceholder')}
-                    className="w-full h-12 px-4 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-base font-medium outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-gray-700 mb-1.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {t('eduLabel')}
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={education} onChange={(e) => setEducation(e.target.value)}
-                      className="w-full h-12 px-4 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-base font-medium outline-none appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled>{t('eduSelectPlaceholder')}</option>
-                      <option value="0">{t('eduLevel0')}</option>
-                      <option value="4">{t('eduLevel4')}</option>
-                      <option value="6">{t('eduLevel6')}</option>
-                      <option value="9">{t('eduLevel9')}</option>
-                      <option value="12">{t('eduLevel12')}</option>
-                      <option value="14">{t('eduLevel14')}</option>
-                      <option value="16">{t('eduLevel16')}</option>
-                      <option value="18">{t('eduLevel18')}</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2.5 mt-6">
-                <button
-                  onClick={handleStartRealTest} disabled={!age || !education}
-                  className="w-full h-12 rounded-xl font-bold text-[0.9375rem] bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all shadow-sm shadow-blue-600/20 active:scale-[0.98]"
-                >
-                  {t('startRealTestBtn')}
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-full py-3 text-slate-400 hover:text-slate-600 font-semibold text-sm transition-colors"
-                >
-                  {t('backToPracticeBtn')}
-                </button>
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Timer warning modal */}
+      {/* ── Timer Warning Modal — shown directly after "I Am Familiar" ── */}
       {showTimerWarning && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-6" role="dialog" aria-modal="true" aria-labelledby="timer-modal-title">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -459,7 +374,7 @@ export function PracticeScreen() {
                 {t('confirmStart')}
               </button>
               <button
-                onClick={() => { setShowTimerWarning(false); setIsModalOpen(true) }}
+                onClick={() => setShowTimerWarning(false)}
                 className="w-full py-3 text-slate-400 hover:text-slate-600 font-semibold text-sm transition-colors"
               >
                 {t('cancel')}

@@ -2,6 +2,7 @@
 
 import { AppProvider, useApp, type Screen } from "@/lib/app-context"
 import { AppHeader } from "@/components/dcdt/app-header"
+import { WelcomeScreen } from "@/components/dcdt/welcome-screen"
 import { TutorialScreen } from "@/components/dcdt/tutorial-screen"
 import { PracticeScreen } from "@/components/dcdt/practice-screen"
 import { CanvasScreen } from "@/components/dcdt/canvas-screen"
@@ -92,27 +93,35 @@ function StepIndicator() {
 
 function ScreenRouter() {
   const { currentScreen } = useApp()
+  if (currentScreen === 'welcome')  return <WelcomeScreen />
   if (currentScreen === 'tutorial') return <TutorialScreen />
   if (currentScreen === 'practice') return <PracticeScreen />
   if (currentScreen === 'canvas')   return <CanvasScreen />
   if (currentScreen === 'loading')  return <LoadingScreen />
   if (currentScreen === 'report')   return <ReportScreen />
-  return <TutorialScreen />
+  return <WelcomeScreen />
 }
 
 // ─── App Shell ─────────────────────────────────────────────────────────────────
 
 function DCDTApp() {
   const { currentScreen } = useApp()
-  const isReport = currentScreen === 'report'
+
+  const isWelcome = currentScreen === 'welcome'
+  const isReport  = currentScreen === 'report'
 
   return (
-    <div className={isReport
-      ? 'min-h-full bg-slate-50 flex flex-col'
-      : 'min-h-screen lg:h-full bg-slate-50 flex flex-col'
+    <div className={
+      isReport
+        ? 'min-h-full bg-slate-50 flex flex-col'
+        : 'min-h-screen lg:h-full bg-slate-50 flex flex-col'
     }>
+      {/* Global header is always rendered — WelcomeScreen no longer owns its own header */}
       <AppHeader />
-      <StepIndicator />
+
+      {/* StepIndicator is HIDDEN on the welcome/dashboard screen */}
+      {!isWelcome && <StepIndicator />}
+
       <main className={isReport ? 'flex flex-col' : 'flex-1 min-h-0 flex flex-col'}>
         <ScreenRouter />
       </main>

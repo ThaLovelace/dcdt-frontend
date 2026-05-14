@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/app-context'
 import { Languages } from 'lucide-react'
+import Image from 'next/image' // 1. เพิ่ม import Image เข้ามา
 
 export function AppHeader() {
   const { t, language, setLanguage } = useApp()
@@ -12,11 +13,16 @@ export function AppHeader() {
 
         {/* Logo & Title */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm shadow-blue-600/30">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          {/* 2. เปลี่ยน SVG เดิมเป็น Image component */}
+          <div className="w-10 h-10 flex items-center justify-center shrink-0">
+            <Image 
+              src="/dCDT-Logo.png" 
+              alt="dCDT Logo" 
+              width={40} 
+              height={40} 
+              className="object-contain"
+              priority // ใส่ priority เพื่อให้โลโก้โหลดเป็นสิ่งแรกเสมอ
+            />
           </div>
           <div className="hidden sm:flex flex-col">
             <span className="text-[0.9375rem] font-black text-gray-900 tracking-tight leading-tight">{t('appTitle')}</span>

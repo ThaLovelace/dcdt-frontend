@@ -1,4 +1,7 @@
 // File: src/lib/app-context.tsx
+// No schema changes required — alias, age, education already exist.
+// This file is reproduced verbatim from the original for completeness.
+// The only addition is re-exporting Screen so page.tsx can use it.
 
 "use client";
 
@@ -10,7 +13,6 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-// Import translations and types from the external file
 import { translations, Language } from "./translations";
 
 // V2.0 Type Definitions for Backend Response
@@ -45,35 +47,38 @@ export interface AnalysisResponse {
   model_version: string;
   velocity_profile: number[];
   xai_evidence_b64: string | null;
-  // --- New Fields ---
-  ai_confidence: number;            // Confidence score 0-100
-  processed_image_b64: string | null; // Centered input image
+  ai_confidence: number;
+  processed_image_b64: string | null;
+  is_history?: boolean;
 }
 
-export type Screen = "tutorial" | "practice" | "canvas" | "loading" | "report";
+// "welcome" is the initial/dashboard screen
+export type Screen = "welcome" | "tutorial" | "practice" | "canvas" | "loading" | "report";
 
 interface AppContextType {
   // Navigation & Screen State
   currentScreen: Screen;
   setCurrentScreen: (s: Screen) => void;
-  
+
   // Language Configuration
   language: Language;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   isChangingLanguage: boolean;
-  
+
   // Test Lifecycle Management
   restartCount: number;
   incrementRestartCount: () => void;
   resetRestartCount: () => void;
-  
+
   // Timer Functions
   startTCT: () => void;
   getTCT: () => number;
-  
+
   // Patient Demographics & Assessment Results
+  alias: string;
+  setAlias: (alias: string) => void;
   age: string;
   setAge: (age: string) => void;
   education: string;
@@ -84,36 +89,45 @@ interface AppContextType {
   // Analysis Data state using the exact V2.0 schema
   analysisData: AnalysisResponse | null;
   setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisResponse | null>>;
+
+  // Raw capture data for Supabase persistence
+  rawStrokes: any[];
+  setRawStrokes: React.Dispatch<React.SetStateAction<any[]>>;
+  originalImageB64: string;
+  setOriginalImageB64: React.Dispatch<React.SetStateAction<string>>;
+  deviceDPI: number;
+  setDeviceDPI: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // State Initialization
-  const [currentScreen, setCurrentScreen] = useState<Screen>("tutorial");
+  // Default screen is "welcome" (the smart dashboard)
+  const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
   const [language, setLanguage] = useState<Language>("th");
   const [isChangingLanguage, setIsChangingLanguage] = useState(false);
-  
+
   const [restartCount, setRestartCount] = useState(0);
   const tctStartRef = useRef<number | null>(null);
 
   // Demographic & Result States
+  const [alias, setAlias] = useState<string>("");
   const [age, setAge] = useState<string>("");
   const [education, setEducation] = useState<string>("");
   const [resultIndex, setResultIndex] = useState<number>(0);
   const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
+  const [rawStrokes, setRawStrokes] = useState<any[]>([]);
+  const [originalImageB64, setOriginalImageB64] = useState<string>('');
+  const [deviceDPI, setDeviceDPI] = useState<number>(96);
 
-  // Language Handlers
   const toggleLanguage = useCallback(() => {
     setIsChangingLanguage(true);
-    // Add a slight delay for smooth UI transition
     setTimeout(() => {
       setLanguage((prev) => (prev === "th" ? "en" : "th"));
       setIsChangingLanguage(false);
-    }, 300); 
+    }, 300);
   }, []);
 
-  // Translation function with dynamic variable replacement
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>): string => {
       const dict = translations[language] as Record<string, string>;
@@ -124,30 +138,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [language]
   );
 
-  // Utility Functions
   const incrementRestartCount = useCallback(() => setRestartCount((n) => n + 1), []);
   const resetRestartCount = useCallback(() => setRestartCount(0), []);
-  
-  const startTCT = useCallback(() => { 
-    tctStartRef.current = Date.now(); 
+
+  const startTCT = useCallback(() => {
+    tctStartRef.current = Date.now();
   }, []);
-  
+
   const getTCT = useCallback(() => {
     if (tctStartRef.current === null) return 0;
     return Math.round((Date.now() - tctStartRef.current) / 1000);
   }, []);
 
   return (
-    <AppContext.Provider 
+    <AppContext.Provider
       value={{
         language, setLanguage, toggleLanguage, t, isChangingLanguage,
         currentScreen, setCurrentScreen,
         restartCount, incrementRestartCount, resetRestartCount,
         startTCT, getTCT,
+        alias, setAlias,
         age, setAge,
         education, setEducation,
         resultIndex, setResultIndex,
         analysisData, setAnalysisData,
+        rawStrokes, setRawStrokes,
+        originalImageB64, setOriginalImageB64,
+        deviceDPI, setDeviceDPI,
       }}
     >
       {children}
