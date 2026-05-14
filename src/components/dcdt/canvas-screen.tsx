@@ -198,11 +198,23 @@ export function CanvasScreen() {
     setOriginalImageB64(imageB64)
     setDeviceDPI(currentDpi)
     setCurrentScreen('loading')
+    // BUG-01 FIX: canvas.width / canvas.height are the physical pixel dimensions
+    // (after DPR scaling applied in initCanvas). The K5 clock-hand segmentation
+    // algorithm on the backend uses these to compute the stable canvas centre and
+    // threshold_radius — independent of how many strokes the patient has drawn.
+    // We divide by dpr to get CSS-pixel (logical) coordinates, which match the
+    // x/y values stored in strokesRef (recorded in CSS-pixel space via getCoordinates).
+    const dpr = window.devicePixelRatio || 1
+    const logicalCanvasWidth  = canvas ? canvas.width  / dpr : 800
+    const logicalCanvasHeight = canvas ? canvas.height / dpr : 800
+
     const payload = {
       strokes: strokesRef.current, image_b64: imageB64,
       patient_age: age ? parseInt(age as string, 10) : 0,
       education_years: education ? parseInt(education as string, 10) : 0,
       device_dpi: currentDpi,
+      canvas_width:  logicalCanvasWidth,
+      canvas_height: logicalCanvasHeight,
     }
     try {
       const response = await fetch(`${BACKEND_URL}/analyze`, {
